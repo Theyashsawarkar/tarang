@@ -55,8 +55,8 @@ class Plugin(Base):
     preview = True
     preview_width = 290
     live = 4
-    hints = [Hint("↵", "connect"), Hint("⌃D", "disconnect"), Hint("⌃F", "forget"), Hint("⌃R", "rescan"),
-             Hint("⌃H", "hotspot")]
+    hints = [Hint("Enter", "connect"), Hint("Ctrl+D", "disconnect"), Hint("Ctrl+F", "forget"), Hint("Ctrl+R", "rescan"),
+             Hint("Ctrl+H", "hotspot")]
 
     def __init__(self, vyom, conf):
         super().__init__(vyom, conf)
@@ -196,12 +196,12 @@ class Plugin(Base):
         rows = [Row("Hotspot is on" if st["on"] else "Hotspot is off",
                     f"sharing {st['internet']}" if st["on"] and st.get("internet") else
                     "Enter starts it" if not st["on"] else "no internet to share",
-                    icon="\U000f0003", color="teal" if st["on"] else "gray", meta="↵ " + ("stop" if st["on"] else "start"),
+                    icon="\U000f0003", color="teal" if st["on"] else "gray", meta="Enter " + ("stop" if st["on"] else "start"),
                     data={"kind": "hotspot-toggle", "st": st})]
         if st.get("ssid"):
-            rows.append(Row(st["ssid"], "network name", icon="\U000f05a9", color="gray", meta="↵ copy",
+            rows.append(Row(st["ssid"], "network name", icon="\U000f05a9", color="gray", meta="Enter copy",
                             data={"kind": "copy", "text": st["ssid"], "st": st}))
-            rows.append(Row(st.get("password", ""), "password", icon=LOCK, color="gray", meta="↵ copy",
+            rows.append(Row(st.get("password", ""), "password", icon=LOCK, color="gray", meta="Enter copy",
                             data={"kind": "copy", "text": st.get("password", ""), "st": st}))
         if st["on"]:
             rows.append(Section(f"Connected · {st.get('client_count', 0)}"))

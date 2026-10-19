@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.1.1 -- 2026-10-19
+
+- Keys are spelled out (Ctrl+Enter, Shift+Enter, Backspace) instead of symbols
+  (⌃↵, ⇧↵, ⌫) in the footer and on rows and buttons.
+
 ## v0.1.0 -- 2026-10-19
 
 - First release, as its own repository: wi‑Fi and the hotspot. Replaces networkmanager_dmenu (wifi-picker.py) in Vayu.
