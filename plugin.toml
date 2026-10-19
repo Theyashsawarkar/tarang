@@ -1,0 +1,8 @@
+name = "tarang"
+title = "Wi-Fi"
+description = "Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot)."
+version = "0.1.0"
+vyom = "0.2"
+icon = "󰖩"
+color = "sky"
+requires = ["nmcli"]
