@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile
+        run: python -m compileall -q tarang
+      - name: plugin.toml
+        run: |
+          python - <<'EOF'
+          import tomllib
+          m = tomllib.load(open("plugin.toml", "rb"))
+          for key in ("name", "title", "version", "vyom", "icon", "color", "description"):
+              assert m.get(key), f"plugin.toml: missing {key}"
+          assert m["name"] == "tarang", m["name"]
+          assert f"## v{m['version']} " in open("CHANGELOG.md").read(), "CHANGELOG.md: no entry for this version"
+          EOF
+      - name: Every key is documented
+        run: |
+          python - <<'EOF'
+          import pathlib, re
+          readme = pathlib.Path("README.md").read_text()
+          missing = []
+          for path in pathlib.Path("tarang").rglob("*.py"):
+              for line in path.read_text().splitlines():
+                  m = re.match(r"#\s*keybind:\s*Vyom/[^|]+\|\s*([^|]+?)\s*\|", line)
+                  if m and f"`{m.group(1)}`" not in readme:
+                      missing.append(m.group(1))
+          assert not missing, f"keys missing from README.md: {missing}"
+          EOF
