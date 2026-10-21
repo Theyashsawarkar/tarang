@@ -38,3 +38,5 @@ jobs:
                       missing.append(m.group(1))
           assert not missing, f"keys missing from README.md: {missing}"
           EOF
+      - name: Website is up to date
+        run: python3 scripts/build-site.py --check

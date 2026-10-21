@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tarang · Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).</title>
+<meta name="description" content="Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).">
+<meta property="og:title" content="tarang · Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).">
+<meta property="og:description" content="Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).">
+<meta name="theme-color" content="#11111b">
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<style>:root{--accent:#89dceb;--glow:#89dceb33}</style>
+</head>
+<body>
+<header class="top"><div class="in">
+<a class="brand" href="index.html"><img src="assets/logo.svg" alt=""><span>tarang <small>तरंग</small></span></a>
+<nav><a href="index.html" class="on">Overview</a><a href="changelog.html" class="">Changelog</a><a href="adr/index.html" class=" hide">Decisions</a><a class="gh" href="https://github.com/Theyashsawarkar/tarang">GitHub ↗</a></nav></div></header>
+<section class="hero"><div class="in"><div>
+<div class="eyebrow">a Vyom tool</div>
+<h1>tarang</h1>
+<div class="sa">तरंग <span>· “wave”</span></div>
+<p class="lead">Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).</p>
+<div class="cta"><a class="btn primary" href="#install">Install</a><a class="btn" href="https://github.com/Theyashsawarkar/tarang">GitHub ↗</a>
+<a class="btn" href="changelog.html">What's new in v0.1.3</a></div>
+<div class="meta"><span><b>v0.1.3</b> latest</span><span><b>4</b> releases</span><span><b>3</b> decisions recorded</span><span><b>MIT</b> license</span></div>
+</div><img class="logo" src="assets/logo.svg" alt="tarang logo"></div></section>
+<div class="wrap"><aside class="toc"><b>On this page</b><a class="l2" href="#features">Features</a><a class="l2" href="#install">Install</a><a class="l3" href="#requirements">Requirements</a><a class="l3" href="#install">Install</a><a class="l3" href="#update-and-uninstall">Update and uninstall</a><a class="l2" href="#usage">Usage</a><a class="l2" href="#configuration">Configuration</a><a class="l2" href="#troubleshooting">Troubleshooting</a><a class="l2" href="#the-vyom-family">The Vyom family</a><a class="l2" href="#contributing">Contributing</a><a class="l2" href="#license">License</a></aside><article>
+<!-- No screenshot: wi-fi shows personal data (your own networks). -->
+<blockquote><p><em>Tarang</em> (तरंग) is Sanskrit for "wave": the radio waves your Wi‑Fi and hotspot ride on.</p></blockquote>
+<p>tarang is wi‑Fi and the hotspot for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>: one keyboard-driven panel that opens instantly, with live data, a preview and a key for everything. It runs on any compositor with the layer-shell protocol (sway, Hyprland, river, niri, Wayfire, labwc…). In <a href="https://github.com/Theyashsawarkar/vayu">Vayu</a>, the desktop it was built for, it replaces networkmanager_dmenu (wifi-picker.py).</p>
+<h2 id="features"><a class="anchor" href="#features">#</a>Features</h2>
+<ul><li>Networks with <strong>live signal bars</strong> (rescanned every few seconds while open): the one you're on, then saved ones, then nearby.</li><li><code>Enter</code> connects; a secured network you haven't joined asks for its <strong>password right in the search box</strong>.</li><li>Disconnect, forget, rescan, and a Wi‑Fi on/off switch; Ethernet shows when it's what you're on.</li><li>The preview: signal, security, band, channel, BSSID, your address.</li><li>A <strong>Hotspot tab</strong> (with Vayu's <code>vayu-hotspot</code>, or any command with its <code>status --json</code> / <code>on</code> / <code>off</code> interface): on/off, name and password, a <strong>QR code</strong> phones scan to join, connected devices.</li><li>Keyboard first: every action has a key, shown in the footer; the mouse works too.</li><li>Never freezes the panel: slow commands run in the background.</li></ul>
+<h2 id="install"><a class="anchor" href="#install">#</a>Install</h2>
+<h3 id="requirements"><a class="anchor" href="#requirements">#</a>Requirements</h3>
+<ul><li><a href="https://github.com/Theyashsawarkar/vyom">Vyom</a> 0.2 or newer (Python 3.11+, PyGObject, GTK 4, <a href="https://github.com/wmww/gtk4-layer-shell">gtk4-layer-shell</a>, a Nerd Font)</li><li><code>nmcli</code></li><li>optional: qrencode (the hotspot's QR code)</li></ul>
+<h3 id="install"><a class="anchor" href="#install">#</a>Install</h3>
+<pre class="code" data-lang="sh"><code>git clone https://github.com/Theyashsawarkar/tarang ~/.local/share/vyom/plugins/tarang
+vyom reload           # pick it up (or log out and in)
+vyom tarang            # open it; run it again to close</code></pre>
+<p>Give it a key in your compositor, e.g. sway:</p>
+<pre class="code" data-lang="sh"><code>bindsym $mod+&lt;key&gt; exec vyom tarang</code></pre>
+<h3 id="update-and-uninstall"><a class="anchor" href="#update-and-uninstall">#</a>Update and uninstall</h3>
+<pre class="code" data-lang="sh"><code>git -C ~/.local/share/vyom/plugins/tarang pull &amp;&amp; vyom reload     # update
+rm -rf ~/.local/share/vyom/plugins/tarang &amp;&amp; vyom reload          # uninstall</code></pre>
+<h2 id="usage"><a class="anchor" href="#usage">#</a>Usage</h2>
+<p>Open it with <code>vyom tarang</code> (or your key). Type to search; the footer always shows the keys for what's selected.</p>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>Enter</code></td><td>Connect to the selected network (asks for its password if needed)</td></tr><tr><td><code>Ctrl+D</code></td><td>Disconnect from the current network</td></tr><tr><td><code>Ctrl+F</code></td><td>Forget the selected saved network</td></tr><tr><td><code>Ctrl+R</code></td><td>Rescan for networks</td></tr><tr><td><code>Ctrl+W</code></td><td>Turn Wi-Fi on or off</td></tr><tr><td><code>Ctrl+H</code></td><td>Switch between networks and the hotspot</td></tr><tr><td><code>Esc</code></td><td>Close the panel</td></tr></tbody></table></div>
+<p>Every Vyom panel also has <code>Up</code>/<code>Down</code> (or <code>Ctrl+K</code>/<code>Ctrl+J</code>) to move, <code>Page Up</code>/<code>Page Down</code> to jump and <code>Tab</code> to switch to the next tool.</p>
+<h2 id="configuration"><a class="anchor" href="#configuration">#</a>Configuration</h2>
+<p>Everything is optional, in <code>~/.config/vyom/config.toml</code> under <code>[plugin.tarang]</code>:</p>
+<div class="table"><table><thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead><tbody><tr><td><code>hotspot_command</code></td><td>vayu-hotspot</td><td>The hotspot command (the tab hides without it)</td></tr></tbody></table></div>
+<p>Run <code>vyom reload</code> after editing.</p>
+<h2 id="troubleshooting"><a class="anchor" href="#troubleshooting">#</a>Troubleshooting</h2>
+<ul><li><strong>Nothing opens.</strong> <code>vyom list</code> shows every installed tool, and why one is skipped (a missing requirement, or a Vyom that's too old).</li><li><strong>It opened, then something failed.</strong> Look for a <code>Traceback</code> in <code>~/.local/state/vyom/daemon.log</code>, and <a href="https://github.com/Theyashsawarkar/tarang/issues/new/choose">open an issue</a> with it.</li><li><strong>No blur or rounded corners.</strong> That's the compositor: on SwayFX, add <code>layer_effects &quot;vyom&quot; { blur enable; corner_radius 20; shadows enable }</code>.</li></ul>
+<h2 id="the-vyom-family"><a class="anchor" href="#the-vyom-family">#</a>The Vyom family</h2>
+<p>Each tool is its own repository, so you install only the ones you want:</p>
+<div class="table"><table><thead><tr><th>Tool</th><th></th><th>What it does</th></tr></thead><tbody><tr><td><a href="https://github.com/Theyashsawarkar/dvara">dvara</a></td><td>द्वार, gateway</td><td>The app launcher</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/ganit">ganit</a></td><td>गणित, mathematics</td><td>The calculator and converter</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/smriti">smriti</a></td><td>स्मृति, memory</td><td>Clipboard history</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/bhava">bhava</a></td><td>भाव, feeling, emotion</td><td>The emoji picker</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/tarang">tarang</a> (this one)</td><td>तरंग, wave</td><td>Wi‑Fi and the hotspot</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/setu">setu</a></td><td>सेतु, bridge</td><td>Bluetooth</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/doot">doot</a></td><td>दूत, messenger</td><td>Your phone, through KDE Connect</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/patra">patra</a></td><td>पात्र, vessel</td><td>Docker containers</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/suchana">suchana</a></td><td>सूचना, notice</td><td>Notifications</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/raga">raga</a></td><td>राग, melody</td><td>YouTube music and video</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/mudra">mudra</a></td><td>मुद्रा, gesture</td><td>Keybinding search</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/urja">urja</a></td><td>ऊर्जा, energy</td><td>The battery at a glance</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/vishram">vishram</a></td><td>विश्राम, rest</td><td>The power menu</td></tr><tr><td><a href="https://github.com/Theyashsawarkar/kendra">kendra</a></td><td>केन्द्र, centre</td><td>Quick settings</td></tr></tbody></table></div>
+<h2 id="contributing"><a class="anchor" href="#contributing">#</a>Contributing</h2>
+<p>Bug reports, ideas and pull requests are welcome: see <a href="https://github.com/Theyashsawarkar/tarang/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> for the development setup and the few rules every tool follows, and <a href="changelog.html">CHANGELOG.md</a> for what changed in each release. Please report security issues privately (<a href="https://github.com/Theyashsawarkar/tarang/blob/main/SECURITY.md">SECURITY.md</a>).</p>
+<h2 id="license"><a class="anchor" href="#license">#</a>License</h2>
+<p><a href="https://github.com/Theyashsawarkar/tarang/blob/main/LICENSE">MIT</a>.</p>
+</article></div>
+<footer><div class="in"><div><h4>Desktop</h4><a href="https://theyashsawarkar.github.io/vayu/" class="">vayu <span>वायु · the keyboard-driven Wayland desktop</span></a></div><div><h4>Apps</h4><a href="https://theyashsawarkar.github.io/nada/" class="">nada <span>नाद · music player</span></a><a href="https://theyashsawarkar.github.io/sangam/" class="">sangam <span>संगम · pull requests in the terminal</span></a><a href="https://theyashsawarkar.github.io/anumati/" class="">anumati <span>अनुमति · root commands for AI agents</span></a></div><div><h4>Vyom</h4><a href="https://theyashsawarkar.github.io/vyom/" class="">vyom <span>व्योम · panels runtime</span></a></div><div><h4>Vyom tools</h4><a href="https://theyashsawarkar.github.io/dvara/" class="">dvara <span>द्वार · apps</span></a><a href="https://theyashsawarkar.github.io/ganit/" class="">ganit <span>गणित · calculator</span></a><a href="https://theyashsawarkar.github.io/smriti/" class="">smriti <span>स्मृति · clipboard</span></a><a href="https://theyashsawarkar.github.io/bhava/" class="">bhava <span>भाव · emoji</span></a><a href="https://theyashsawarkar.github.io/tarang/" class="me">tarang <span>तरंग · Wi‑Fi</span></a><a href="https://theyashsawarkar.github.io/setu/" class="">setu <span>सेतु · Bluetooth</span></a><a href="https://theyashsawarkar.github.io/doot/" class="">doot <span>दूत · phone</span></a><a href="https://theyashsawarkar.github.io/patra/" class="">patra <span>पात्र · Docker</span></a><a href="https://theyashsawarkar.github.io/suchana/" class="">suchana <span>सूचना · notifications</span></a><a href="https://theyashsawarkar.github.io/raga/" class="">raga <span>राग · YouTube</span></a><a href="https://theyashsawarkar.github.io/mudra/" class="">mudra <span>मुद्रा · keybindings</span></a><a href="https://theyashsawarkar.github.io/urja/" class="">urja <span>ऊर्जा · battery</span></a><a href="https://theyashsawarkar.github.io/vishram/" class="">vishram <span>विश्राम · power menu</span></a><a href="https://theyashsawarkar.github.io/kendra/" class="">kendra <span>केन्द्र · quick settings</span></a></div></div>
+<div class="bottom">tarang is free software under the MIT license · <a href="https://github.com/Theyashsawarkar/tarang">source</a> · <a href="https://github.com/Theyashsawarkar/tarang/issues">issues</a> · <a href="changelog.html">changelog</a> · part of <a href="https://theyashsawarkar.github.io/vayu/">Vayu</a></div></footer>
+<script>
+document.querySelectorAll('pre.code').forEach(p=>{const b=document.createElement('button');b.className='copy';b.textContent='Copy';
+b.onclick=()=>{navigator.clipboard.writeText(p.innerText.replace(/^Copy/,'')).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1200)})};p.appendChild(b)});
+const links=[...document.querySelectorAll('.toc a')];if(links.length){const hs=links.map(a=>document.getElementById(a.hash.slice(1))).filter(Boolean);
+const on=()=>{let cur=hs[0];for(const h of hs){if(h.getBoundingClientRect().top<120)cur=h}links.forEach(a=>a.classList.toggle('on',cur&&a.hash==='#'+cur.id))};
+addEventListener('scroll',on,{passive:true});on()}
+</script>
+</body>
+</html>

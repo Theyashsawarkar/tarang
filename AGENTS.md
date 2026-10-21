@@ -7,3 +7,4 @@ A Vyom tool (wi‑fi and the hotspot), in its own repo per Vayu's plugin rule (g
 - Detect, don't assume: no tool or hardware means a clear row or `available()` returning why, never a crash.
 - Every change: a CHANGELOG.md entry; releases are tags with `version` in plugin.toml bumped.
 - Test live: link the repo into ~/.local/share/vyom/plugins/tarang, `vyom quit; vyom tarang`, screenshot it (grim), close it.
+- The website (docs/, GitHub Pages) is generated: after changing README.md, CHANGELOG.md or docs/adr/, run `python3 scripts/build-site.py` and commit docs/ (CI checks it). A significant design decision gets a new ADR in docs/adr/ (next number; supersede, never rewrite).

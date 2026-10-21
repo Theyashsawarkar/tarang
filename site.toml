@@ -1,0 +1,8 @@
+# The project website (docs/, GitHub Pages): built by scripts/build-site.py
+name = "tarang"
+sanskrit = "तरंग"
+meaning = "wave"
+tagline = "Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot)."
+color = "sky"
+kind = "a Vyom tool"
+logo = "assets/logo.svg"
