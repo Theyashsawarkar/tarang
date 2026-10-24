@@ -2,6 +2,12 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.2.0 -- 2026-10-24
+
+- The Networks / Hotspot tabs switch like every Vyom tool's tabs (Vyom 0.3.0): `Ctrl+H` /
+  `Ctrl+L` for the previous / next tab and `Ctrl+1` / `Ctrl+2`. `Ctrl+H` was a toggle; it
+  still switches between the two. Needs Vyom 0.3.0.
+
 ## v0.1.3 -- 2026-10-21
 
 - A website (GitHub Pages, https://theyashsawarkar.github.io/tarang/): the README as a home page, the

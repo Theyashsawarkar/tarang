@@ -21,7 +21,6 @@ from vyom import Plugin as Base
 # keybind: Vyom/wifi | Ctrl+F | Forget the selected saved network
 # keybind: Vyom/wifi | Ctrl+R | Rescan for networks
 # keybind: Vyom/wifi | Ctrl+W | Turn Wi-Fi on or off
-# keybind: Vyom/wifi | Ctrl+H | Switch between networks and the hotspot
 
 BARS = ["\U000f092f", "\U000f091f", "\U000f0922", "\U000f0925", "\U000f0928"]  # wifi strength 0..4
 LOCK = "\U000f033e"
@@ -55,8 +54,7 @@ class Plugin(Base):
     preview = True
     preview_width = 290
     live = 4
-    hints = [Hint("Enter", "connect"), Hint("Ctrl+D", "disconnect"), Hint("Ctrl+F", "forget"), Hint("Ctrl+R", "rescan"),
-             Hint("Ctrl+H", "hotspot")]
+    hints = [Hint("Enter", "connect"), Hint("Ctrl+D", "disconnect"), Hint("Ctrl+F", "forget"), Hint("Ctrl+R", "rescan")]
 
     def __init__(self, vyom, conf):
         super().__init__(vyom, conf)
@@ -65,7 +63,8 @@ class Plugin(Base):
         self.last_scan = 0
         self.hotspot = util.expand(self.conf.get("hotspot_command", "vayu-hotspot"))
         self.switch = None
-        self.tabs = {}
+        # Networks / Hotspot tabs (Ctrl+H/L, Ctrl+1/2: Vyom), when there's a hotspot command.
+        self.tabs = [("networks", "Networks"), ("hotspot", "Hotspot")] if util.have(self.hotspot) else []
 
     def wifi_device(self):
         code, out = util.run("nmcli -t -f DEVICE,TYPE device")
@@ -77,20 +76,6 @@ class Plugin(Base):
     # ------------------------------------------------------------ header
     def header_extra(self):
         box = Gtk.Box(spacing=8)
-        if util.have(self.hotspot):
-            group = None
-            for key, label in (("networks", "Networks"), ("hotspot", "Hotspot")):
-                b = Gtk.ToggleButton(label=label)
-                b.add_css_class("tab")
-                b.set_can_focus(False)
-                if group is None:
-                    group = b
-                    b.set_active(True)
-                else:
-                    b.set_group(group)
-                b.connect("toggled", lambda btn, k=key: btn.get_active() and self.set_tab(k))
-                self.tabs[key] = b
-                box.append(b)
         self.switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         self.switch.set_can_focus(False)
         self.switch.set_tooltip_text("Wi-Fi on/off (Ctrl+W)")
@@ -98,8 +83,7 @@ class Plugin(Base):
         box.append(self.switch)
         return box
 
-    def set_tab(self, key):
-        self.tab = key
+    def tab_changed(self, key):
         self.cancel_password()
         self.refresh()
 
@@ -110,10 +94,8 @@ class Plugin(Base):
     def opened(self, args):
         super().opened(args)
         self.cancel_password()
-        if args and args[0] == "hotspot" and "hotspot" in self.tabs:
-            self.tabs["hotspot"].set_active(True)
-        elif "networks" in self.tabs:
-            self.tabs["networks"].set_active(True)
+        if self.tabs:
+            self.select_tab("hotspot" if args and args[0] == "hotspot" else "networks")
 
     # ------------------------------------------------------------ data
     def search(self, q):
@@ -358,8 +340,6 @@ class Plugin(Base):
             self.refresh()
         elif name == "w":
             self.set_radio(not (self.switch and self.switch.get_active()))
-        elif name == "h" and "hotspot" in self.tabs:
-            self.tabs["hotspot" if self.tab == "networks" else "networks"].set_active(True)
         else:
             return False
         return True

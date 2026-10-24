@@ -24,8 +24,8 @@
 <div class="sa">तरंग <span>· “wave”</span></div>
 <p class="lead">Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).</p>
 <div class="cta"><a class="btn primary" href="#install">Install</a><a class="btn" href="https://github.com/Theyashsawarkar/tarang">GitHub ↗</a>
-<a class="btn" href="changelog.html">What's new in v0.1.3</a></div>
-<div class="meta"><span><b>v0.1.3</b> latest</span><span><b>4</b> releases</span><span><b>3</b> decisions recorded</span><span><b>MIT</b> license</span></div>
+<a class="btn" href="changelog.html">What's new in v0.2.0</a></div>
+<div class="meta"><span><b>v0.2.0</b> latest</span><span><b>5</b> releases</span><span><b>3</b> decisions recorded</span><span><b>MIT</b> license</span></div>
 </div><img class="logo" src="assets/logo.svg" alt="tarang logo"></div></section>
 <div class="wrap"><aside class="toc"><b>On this page</b><a class="l2" href="#features">Features</a><a class="l2" href="#install">Install</a><a class="l3" href="#requirements">Requirements</a><a class="l3" href="#install">Install</a><a class="l3" href="#update-and-uninstall">Update and uninstall</a><a class="l2" href="#usage">Usage</a><a class="l2" href="#configuration">Configuration</a><a class="l2" href="#troubleshooting">Troubleshooting</a><a class="l2" href="#the-vyom-family">The Vyom family</a><a class="l2" href="#contributing">Contributing</a><a class="l2" href="#license">License</a></aside><article>
 <!-- No screenshot: wi-fi shows personal data (your own networks). -->
@@ -35,7 +35,7 @@
 <ul><li>Networks with <strong>live signal bars</strong> (rescanned every few seconds while open): the one you're on, then saved ones, then nearby.</li><li><code>Enter</code> connects; a secured network you haven't joined asks for its <strong>password right in the search box</strong>.</li><li>Disconnect, forget, rescan, and a Wi‑Fi on/off switch; Ethernet shows when it's what you're on.</li><li>The preview: signal, security, band, channel, BSSID, your address.</li><li>A <strong>Hotspot tab</strong> (with Vayu's <code>vayu-hotspot</code>, or any command with its <code>status --json</code> / <code>on</code> / <code>off</code> interface): on/off, name and password, a <strong>QR code</strong> phones scan to join, connected devices.</li><li>Keyboard first: every action has a key, shown in the footer; the mouse works too.</li><li>Never freezes the panel: slow commands run in the background.</li></ul>
 <h2 id="install"><a class="anchor" href="#install">#</a>Install</h2>
 <h3 id="requirements"><a class="anchor" href="#requirements">#</a>Requirements</h3>
-<ul><li><a href="https://github.com/Theyashsawarkar/vyom">Vyom</a> 0.2 or newer (Python 3.11+, PyGObject, GTK 4, <a href="https://github.com/wmww/gtk4-layer-shell">gtk4-layer-shell</a>, a Nerd Font)</li><li><code>nmcli</code></li><li>optional: qrencode (the hotspot's QR code)</li></ul>
+<ul><li><a href="https://github.com/Theyashsawarkar/vyom">Vyom</a> 0.3 or newer (Python 3.11+, PyGObject, GTK 4, <a href="https://github.com/wmww/gtk4-layer-shell">gtk4-layer-shell</a>, a Nerd Font)</li><li><code>nmcli</code></li><li>optional: qrencode (the hotspot's QR code)</li></ul>
 <h3 id="install"><a class="anchor" href="#install">#</a>Install</h3>
 <pre class="code" data-lang="sh"><code>git clone https://github.com/Theyashsawarkar/tarang ~/.local/share/vyom/plugins/tarang
 vyom reload           # pick it up (or log out and in)
@@ -47,8 +47,8 @@ vyom tarang            # open it; run it again to close</code></pre>
 rm -rf ~/.local/share/vyom/plugins/tarang &amp;&amp; vyom reload          # uninstall</code></pre>
 <h2 id="usage"><a class="anchor" href="#usage">#</a>Usage</h2>
 <p>Open it with <code>vyom tarang</code> (or your key). Type to search; the footer always shows the keys for what's selected.</p>
-<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>Enter</code></td><td>Connect to the selected network (asks for its password if needed)</td></tr><tr><td><code>Ctrl+D</code></td><td>Disconnect from the current network</td></tr><tr><td><code>Ctrl+F</code></td><td>Forget the selected saved network</td></tr><tr><td><code>Ctrl+R</code></td><td>Rescan for networks</td></tr><tr><td><code>Ctrl+W</code></td><td>Turn Wi-Fi on or off</td></tr><tr><td><code>Ctrl+H</code></td><td>Switch between networks and the hotspot</td></tr><tr><td><code>Esc</code></td><td>Close the panel</td></tr></tbody></table></div>
-<p>Every Vyom panel also has <code>Up</code>/<code>Down</code> (or <code>Ctrl+K</code>/<code>Ctrl+J</code>) to move, <code>Page Up</code>/<code>Page Down</code> to jump and <code>Tab</code> to switch to the next tool.</p>
+<div class="table"><table><thead><tr><th>Key</th><th>Action</th></tr></thead><tbody><tr><td><code>Enter</code></td><td>Connect to the selected network (asks for its password if needed)</td></tr><tr><td><code>Ctrl+D</code></td><td>Disconnect from the current network</td></tr><tr><td><code>Ctrl+F</code></td><td>Forget the selected saved network</td></tr><tr><td><code>Ctrl+R</code></td><td>Rescan for networks</td></tr><tr><td><code>Ctrl+W</code></td><td>Turn Wi-Fi on or off</td></tr><tr><td><code>Esc</code></td><td>Close the panel</td></tr></tbody></table></div>
+<p>Every Vyom panel also has <code>Up</code>/<code>Down</code> (or <code>Ctrl+K</code>/<code>Ctrl+J</code>) to move, <code>Page Up</code>/<code>Page Down</code> to jump <code>Tab</code> to switch to the next tool, and <code>Ctrl+H</code>/<code>Ctrl+L</code> (or <code>Ctrl+1..9</code>) to switch tabs.</p>
 <h2 id="configuration"><a class="anchor" href="#configuration">#</a>Configuration</h2>
 <p>Everything is optional, in <code>~/.config/vyom/config.toml</code> under <code>[plugin.tarang]</code>:</p>
 <div class="table"><table><thead><tr><th>Setting</th><th>Default</th><th>What it does</th></tr></thead><tbody><tr><td><code>hotspot_command</code></td><td>vayu-hotspot</td><td>The hotspot command (the tab hides without it)</td></tr></tbody></table></div>
