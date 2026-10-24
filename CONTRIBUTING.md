@@ -7,7 +7,7 @@ requests are all welcome.
 
 Open an [issue](https://github.com/Theyashsawarkar/tarang/issues/new/choose) with what you did, what you
 expected, the output of `vyom list`, and anything relevant from
-`~/.local/state/vyom/daemon.log`. If the problem shows in every Vyom panel,
+the daemon's log (`journalctl --user -u vyom -u vyom-daemon -b`). If the problem shows in every Vyom panel,
 not just wi-fi, it belongs in [Vyom](https://github.com/Theyashsawarkar/vyom/issues).
 
 ## Development setup
@@ -19,7 +19,7 @@ daemon. Work on a clone linked into Vyom's plugin directory:
 git clone https://github.com/Theyashsawarkar/tarang ~/code/tarang
 ln -sfn ~/code/tarang ~/.local/share/vyom/plugins/tarang
 vyom quit; vyom tarang        # restart the daemon with your code, open the panel
-grep -A20 Traceback ~/.local/state/vyom/daemon.log
+journalctl --user -u vyom -u vyom-daemon -b | grep -A20 Traceback
 ```
 
 The API is documented in Vyom's `vyom/plugin.py`; `tarang/__init__.py` holds
