@@ -22,6 +22,11 @@
 
 <!-- No screenshot: wi-fi shows personal data (your own networks). -->
 
+<p align="center">
+  <img alt="tarang: the connected Wi-Fi network, saved ones and nearby ones with live signal and security, and the connected network's details with Disconnect" src="assets/screenshots/tarang.png" width="100%">
+</p>
+<p align="center"><sub>Screenshots use made-up demo networks.</sub></p>
+
 > *Tarang* (तरंग) is Sanskrit for "wave": the radio waves your Wi‑Fi and hotspot ride on.
 
 tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/vyom): one keyboard-driven panel that opens instantly, with live data, a preview and a key for everything. It runs on any compositor with the layer-shell protocol (sway, Hyprland, river, niri, Wayfire, labwc…). In [Vayu](https://github.com/Theyashsawarkar/vayu), the desktop it was built for, it replaces networkmanager_dmenu (wifi-picker.py).

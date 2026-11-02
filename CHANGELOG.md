@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- Screenshots in the README and on the website.
+
 ## v0.2.0 -- 2026-10-24
 
 - The Networks / Hotspot tabs switch like every Vyom tool's tabs (Vyom 0.3.0): `Ctrl+H` /
