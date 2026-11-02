@@ -126,7 +126,7 @@ Each tool is its own repository, so you install only the ones you want:
 | [setu](https://github.com/Theyashsawarkar/setu) | सेतु, bridge | Bluetooth |
 | [doot](https://github.com/Theyashsawarkar/doot) | दूत, messenger | Your phone, through KDE Connect |
 | [patra](https://github.com/Theyashsawarkar/patra) | पात्र, vessel | Docker containers |
-| [suchana](https://github.com/Theyashsawarkar/suchana) | सूचना, notice | Notifications |
+| [akashvani](https://github.com/Theyashsawarkar/akashvani) | आकाशवाणी, voice from the sky | Notifications |
 | [raga](https://github.com/Theyashsawarkar/raga) | राग, melody | YouTube music and video |
 | [mudra](https://github.com/Theyashsawarkar/mudra) | मुद्रा, gesture | Keybinding search |
 | [urja](https://github.com/Theyashsawarkar/urja) | ऊर्जा, energy | The battery at a glance |
