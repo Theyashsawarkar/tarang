@@ -6,6 +6,15 @@
   </picture>
 </p>
 
+<!-- identity -->
+<p align="center">
+  <b>यथा न तोयतो भिन्नास्तरङ्गाः फेनबुद्बुदाः ।<br>
+  आत्मनो न तथा भिन्नं विश्वमात्मविनिर्गतम् ॥</b><br>
+  <i>As waves, foam and bubbles are not apart from water, the world is not apart from the self it rose from.</i><br>
+  <sub>Aṣṭāvakra Gītā 2.4</sub>
+</p>
+<!-- /identity -->
+
 <p align="center">
   <b>Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).</b><br>
   Wi‑Fi and the hotspot. A tool for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>, keyboard-driven panels for Wayland.

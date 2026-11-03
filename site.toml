@@ -6,3 +6,6 @@ tagline = "Wi-Fi: networks with live signal, connect with the password typed inl
 color = "sky"
 kind = "a Vyom tool"
 logo = "assets/logo.svg"
+shloka = "यथा न तोयतो भिन्नास्तरङ्गाः फेनबुद्बुदाः ।\nआत्मनो न तथा भिन्नं विश्वमात्मविनिर्गतम् ॥"
+shloka_meaning = "As waves, foam and bubbles are not apart from water, the world is not apart from the self it rose from."
+shloka_source = "Aṣṭāvakra Gītā 2.4"
