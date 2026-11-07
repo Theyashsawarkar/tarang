@@ -12,7 +12,7 @@ button.tarang-onoff.on .tarang-knob { background: @green; }
 /* the row title's colour, said outright: inherited, it went black in a backdrop (unfocused) window */
 .plugin-tarang .list .row-title { color: @text; }
 /* the signal meter: no theme borders (an unfocused window drew them white and blue) */
-.plugin-tarang progressbar trough, .plugin-tarang progressbar progress { border: none; box-shadow: none; outline: none; }
+.plugin-tarang progressbar trough, .plugin-tarang progressbar progress { border: none; box-shadow: none; outline: none; margin: 0; }
 .plugin-tarang progressbar trough { background: alpha(white, 0.1); }
 .plugin-tarang progressbar.m-green progress { background: @green; }
 .plugin-tarang progressbar.m-yellow progress { background: @yellow; }

@@ -1,7 +1,7 @@
 name = "tarang"
 title = "Wi-Fi"
 description = "Wi-Fi: the network you're on at a glance, signal in bars and words, connect with the password typed inline and see each step, share by QR code; and a hotspot tab (vayu-hotspot)."
-version = "0.3.0"
+version = "0.3.1"
 vyom = "0.6.0"
 icon = "󰖩"
 color = "sky"

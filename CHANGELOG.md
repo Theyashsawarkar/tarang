@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.3.1 -- 2026-11-07
+
+- The signal meter no longer makes GTK warn about its size (its bar had a negative width).
+
 ## v0.3.0 -- 2026-11-07
 
 - A new look (Vyom 0.6.0's status strip). The network you're on is a card at the top: signal ring,
