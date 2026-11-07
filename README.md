@@ -16,7 +16,7 @@
 <!-- /identity -->
 
 <p align="center">
-  <b>Wi-Fi: networks with live signal, connect with the password typed inline, forget, rescan; and a hotspot tab (vayu-hotspot).</b><br>
+  <b>Wi-Fi: the network you're on at a glance, signal in bars and words, connect with the password typed inline and see each step, share by QR code; and a hotspot tab (vayu-hotspot).</b><br>
   Wi‑Fi and the hotspot. A tool for <a href="https://github.com/Theyashsawarkar/vyom">Vyom</a>, keyboard-driven panels for Wayland.
 </p>
 
@@ -24,15 +24,16 @@
   <a href="https://github.com/Theyashsawarkar/tarang/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Theyashsawarkar/tarang/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/Theyashsawarkar/tarang/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Theyashsawarkar/tarang?color=cba6f7&label=release"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-f5e0dc"></a>
-  <a href="https://github.com/Theyashsawarkar/vyom"><img alt="Vyom 0.3+" src="https://img.shields.io/badge/vyom-0.3%2B-89b4fa"></a>
+  <a href="https://github.com/Theyashsawarkar/vyom"><img alt="Vyom 0.6+" src="https://img.shields.io/badge/vyom-0.6%2B-89b4fa"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-a6e3a1">
   <img alt="Wayland" src="https://img.shields.io/badge/wayland-layer--shell-94e2d5">
 </p>
 
-<!-- No screenshot: wi-fi shows personal data (your own networks). -->
-
 <p align="center">
-  <img alt="tarang: the connected Wi-Fi network, saved ones and nearby ones with live signal and security, and the connected network's details with Disconnect" src="assets/screenshots/tarang.png" width="100%">
+  <img alt="tarang: the network you're on as a card with its signal ring, speed, band, security and address, Share and Disconnect; saved networks starred and nearby ones with signal bars and a word; the selected network's signal meter, security and Forget" src="assets/screenshots/tarang.png" width="100%">
+</p>
+<p align="center">
+  <img alt="tarang's Hotspot tab: a QR code to join, the name, hidden password, band and what it shares; the connected devices; the settings, read-only until Enter" src="assets/screenshots/tarang-hotspot.png" width="100%">
 </p>
 <p align="center"><sub>Screenshots use made-up demo networks.</sub></p>
 
@@ -53,21 +54,24 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 
 ## Features
 
-- Networks with **live signal bars** (rescanned every few seconds while open): the one you're on, then saved ones, then nearby.
-- `Enter` connects; a secured network you haven't joined asks for its **password right in the search box**.
-- Disconnect, forget, rescan, and a Wi‑Fi on/off switch; Ethernet shows when it's what you're on.
-- The preview: signal, security, band, channel, BSSID, your address.
-- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): on/off, name and password, a **QR code** phones scan to join, connected devices.
-- Keyboard first: every action has a key, shown in the footer; the mouse works too.
+- **The network you're on, at a glance**: a card at the top with a signal ring, link speed, band and channel, security and your address, and its **Share** (`Ctrl+Q`) and **Disconnect** (`Ctrl+D`) buttons. Not connected, it says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
+- **Signal as bars and a word** (Excellent, Good, Fair, Weak in green, green, yellow, red), saved networks starred, then nearby ones, strongest first. Open networks get a yellow **Open** chip, WEP/WPA1 a red one. Scanning shows in the top bar ("Scanning…", then "Scanned 8 s ago"); `Ctrl+R` rescans.
+- `Enter` connects; a secured network you haven't joined asks for its **password right in the search box** (hidden; `Ctrl+S` shows it), and nothing is sent until you press `Enter`.
+- **Connecting shows its steps** (Associating, Authenticating, Getting an address), read from NetworkManager as they happen. When it fails it says **why** in red: wrong password (and asks again), out of range, no address from the router, a network that needs a user name (WPA Enterprise), a password that's too short.
+- The preview: a signal meter with what it means in plain words ("Fine for video calls"), security as a chip (WPA3 strong, WPA2 good, Open with a warning that anyone nearby can read unencrypted traffic), band and channel, speed, metered, BSSID, and **Forget** in red: press `Ctrl+F` twice, since it can't be undone.
+- **Share** (`Ctrl+Q`): a QR code phones scan to join the network you're on (needs qrencode; without it, the password is shown instead). Only when you ask; the password stays hidden until `Ctrl+S`.
+- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): a QR code to join, the name, the password (hidden until `Ctrl+S`), the band and what it shares, the devices connected right now, and `Ctrl+T` (or the switch) to turn it on or off. Name, password and band are settings, read-only until you press `Enter` on one.
+- A Wi‑Fi on/off switch in the top bar (`Ctrl+W`); on the Hotspot tab it's the hotspot's.
+- Keyboard first: every action has a key, shown on its button and in the footer; the mouse works too.
 - Never freezes the panel: slow commands run in the background.
 
 ## Install
 
 ### Requirements
 
-- [Vyom](https://github.com/Theyashsawarkar/vyom) 0.3 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
+- [Vyom](https://github.com/Theyashsawarkar/vyom) 0.6 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
 - `nmcli`
-- optional: qrencode (the hotspot's QR code)
+- optional: qrencode (QR codes to share a network or join the hotspot)
 
 ### Install
 
@@ -96,11 +100,14 @@ Open it with `vyom tarang` (or your key). Type to search; the footer always show
 
 | Key | Action |
 |---|---|
-| `Enter` | Connect to the selected network (asks for its password if needed) |
+| `Enter` | Connect to the selected network (asks for its password if needed); on the Hotspot tab, edit the selected setting |
 | `Ctrl+D` | Disconnect from the current network |
-| `Ctrl+F` | Forget the selected saved network |
+| `Ctrl+F` | Forget the selected saved network (press twice: it can't be undone) |
 | `Ctrl+R` | Rescan for networks |
 | `Ctrl+W` | Turn Wi-Fi on or off |
+| `Ctrl+Q` | Share the current network as a QR code (on the Hotspot tab: show or hide its QR code) |
+| `Ctrl+S` | Show or hide the password (the one you type, a shared network's, the hotspot's) |
+| `Ctrl+T` | Turn the hotspot on or off (Hotspot tab) |
 | `Esc` | Close the panel |
 
 Every Vyom panel also has `Up`/`Down` (or `Ctrl+K`/`Ctrl+J`) to move and `Page Up`/`Page Down` to jump; its tabs, its main kinds, switch with `Tab`/`Shift+Tab` (or `Ctrl+H`/`Ctrl+L`), or `Ctrl` with the number shown on a tab.

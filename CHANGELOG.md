@@ -2,8 +2,29 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.3.0 -- 2026-11-07
 
+- A new look (Vyom 0.6.0's status strip). The network you're on is a card at the top: signal ring,
+  link speed, band and channel, security, your address, and Share / Disconnect buttons with their
+  keys on them. When you're not connected it says why (Wi-Fi off, on Ethernet, NetworkManager not
+  running, no Wi-Fi card) instead of an empty list.
+- Signal is bars and a word (Excellent, Good, Fair, Weak) instead of a bare percentage; saved
+  networks have a star; open networks a yellow "Open" chip, WEP/WPA1 a red one; Saved and Nearby
+  sections with counts. The top bar shows when it's scanning and how long ago it last scanned.
+- Connecting shows its steps (Associating, Authenticating, Getting an address) as NetworkManager
+  goes through them, and a failure says why in red: wrong password (it asks again right away),
+  out of range, no address from the router, a WPA Enterprise network, a password that's too short.
+  The panel stays open, so you see it connect.
+- The preview has a signal meter with what it means in plain words, security as a chip (with a
+  warning on open and weak networks), band and channel, speed, metered, BSSID.
+- Forget asks first: press `Ctrl+F` twice (it can't be undone).
+- New: `Ctrl+Q` shares the network you're on as a QR code phones scan to join (needs qrencode;
+  without it, the password is shown); `Ctrl+S` shows or hides a password.
+- The Hotspot tab: a QR code to join, name, password (hidden until `Ctrl+S`), band and what it
+  shares, the connected devices, `Ctrl+T` (or the switch) to turn it on or off, and name, password
+  and band as settings that are read-only until you press `Enter` on one. Errors from the hotspot
+  command show in red with its reason.
+- The on/off switch is a pill that says On or Off. Needs Vyom 0.6.0.
 - Every corner is rounded: the website's callouts.
 - A logo and a shloka at the top of the README and the website: every Vayu tool has them now.
 - Screenshots in the README and on the website.

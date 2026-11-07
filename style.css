@@ -1,2 +1,19 @@
 /* tarang */
-.tarang-big { font-family: "JetBrainsMono Nerd Font"; font-size: 34px; color: @sky; }
+.tarang-ring-glyph { font-size: 28px; }
+.tarang-switch-label { color: @subtext0; font-size: 12.5px; font-weight: 600; }
+.tarang-mono { font-family: "JetBrainsMono Nerd Font"; }
+/* a QR code needs a light quiet zone to scan, whatever the theme */
+.tarang-qr { background: white; border-radius: 12px; padding: 4px; }
+button.tarang-onoff { padding: 3px 10px 3px 5px; border-radius: 999px; min-height: 0; font-size: 12px; font-weight: 600;
+  background: @surface1; color: @subtext0; border: 1px solid alpha(white, 0.08); box-shadow: none; }
+button.tarang-onoff .tarang-knob { min-width: 14px; min-height: 14px; margin: 2px 0; border-radius: 999px; background: @overlay1; }
+button.tarang-onoff.on { background: alpha(@green, 0.18); color: @green; border-color: alpha(@green, 0.45); }
+button.tarang-onoff.on .tarang-knob { background: @green; }
+/* the row title's colour, said outright: inherited, it went black in a backdrop (unfocused) window */
+.plugin-tarang .list .row-title { color: @text; }
+/* the signal meter: no theme borders (an unfocused window drew them white and blue) */
+.plugin-tarang progressbar trough, .plugin-tarang progressbar progress { border: none; box-shadow: none; outline: none; }
+.plugin-tarang progressbar trough { background: alpha(white, 0.1); }
+.plugin-tarang progressbar.m-green progress { background: @green; }
+.plugin-tarang progressbar.m-yellow progress { background: @yellow; }
+.plugin-tarang progressbar.m-red progress { background: @red; }
