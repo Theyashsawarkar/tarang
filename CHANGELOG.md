@@ -2,6 +2,12 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.3.2 -- 2026-11-08
+
+- The footer's keys for Networks and Hotspot come from Vyom's `tab_hints()` (Vyom 0.6.2)
+  instead of tarang rewiring the footer; a status message such as "not connected:
+  nothing to share" now shows in full.
+
 ## v0.3.1 -- 2026-11-07
 
 - The signal meter no longer makes GTK warn about its size (its bar had a negative width).

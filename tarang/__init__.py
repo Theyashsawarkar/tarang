@@ -279,19 +279,10 @@ class Plugin(Base):
     HOTSPOT_HINTS = [Hint("Ctrl+T", "on / off"), Hint("Ctrl+Q", "QR code"), Hint("Ctrl+S", "show password"),
                      Hint("Enter", "edit field")]
 
-    def swap_hints(self):
-        """The footer's keys for the tab you're on (Vyom builds it once)."""
-        th = getattr(self.panel, "tab_hint", None) if self.panel else None
-        foot = th.get_parent() if th is not None else None
-        if foot is None:
-            return
-        while foot.get_first_child() is not th:
-            foot.remove(foot.get_first_child())
-        for h in (self.HOTSPOT_HINTS if self.tab == "hotspot" else self.hints):
-            foot.insert_child_after(ui.hint_label(h.keys, h.what), th.get_prev_sibling())
+    def tab_hints(self):
+        return self.HOTSPOT_HINTS if self.tab == "hotspot" else self.hints
 
     def tab_changed(self, key):
-        self.swap_hints()
         self.cancel_entry()
         self.sharing = None
         self.sync_switch()
@@ -310,7 +301,6 @@ class Plugin(Base):
             self.conn = None
         if self.tabs:
             self.select_tab("hotspot" if args and args[0] == "hotspot" else "networks")
-        self.swap_hints()
         if self.tick_id is None:
             self.tick_id = GLib.timeout_add_seconds(1, self.tick)
 
