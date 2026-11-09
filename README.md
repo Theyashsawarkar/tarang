@@ -54,14 +54,15 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 
 ## Features
 
-- **The network you're on, at a glance**: a card at the top with a signal ring, link speed, band and channel, security and your address, and its **Share** (`Ctrl+Q`) and **Disconnect** (`Ctrl+D`) buttons. Not connected, it says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
-- **Signal as bars and a word** (Excellent, Good, Fair, Weak in green, green, yellow, red), saved networks starred, then nearby ones, strongest first. Open networks get a yellow **Open** chip, WEP/WPA1 a red one. Scanning shows in the top bar ("Scanning…", then "Scanned 8 s ago"); `Ctrl+R` rescans.
+- **The network you're on, at a glance**: a card at the top with a signal ring, link speed, band and channel, security and your address, and its **Share** (`Space c q`) and **Disconnect** (`Space c d`) buttons. Not connected, it says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
+- **Signal as bars and a word** (Excellent, Good, Fair, Weak in green, green, yellow, red), saved networks starred, then nearby ones, strongest first. Open networks get a yellow **Open** chip, WEP/WPA1 a red one. Scanning shows in the top bar ("Scanning…", then "Scanned 8 s ago"); `r` rescans.
 - `Enter` connects; a secured network you haven't joined asks for its **password right in the search box** (hidden; `Ctrl+S` shows it), and nothing is sent until you press `Enter`.
 - **Connecting shows its steps** (Associating, Authenticating, Getting an address), read from NetworkManager as they happen. When it fails it says **why** in red: wrong password (and asks again), out of range, no address from the router, a network that needs a user name (WPA Enterprise), a password that's too short.
-- The preview: a signal meter with what it means in plain words ("Fine for video calls"), security as a chip (WPA3 strong, WPA2 good, Open with a warning that anyone nearby can read unencrypted traffic), band and channel, speed, metered, BSSID, and **Forget** in red: press `Ctrl+F` twice, since it can't be undone.
-- **Share** (`Ctrl+Q`): a QR code phones scan to join the network you're on (needs qrencode; without it, the password is shown instead). Only when you ask; the password stays hidden until `Ctrl+S`.
-- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): a QR code to join, the name, the password (hidden until `Ctrl+S`), the band and what it shares, the devices connected right now, and `Ctrl+T` (or the switch) to turn it on or off. Name, password and band are settings, read-only until you press `Enter` on one.
-- A Wi‑Fi on/off switch in the top bar (`Ctrl+W`); on the Hotspot tab it's the hotspot's.
+- The preview: a signal meter with what it means in plain words ("Fine for video calls"), security as a chip (WPA3 strong, WPA2 good, Open with a warning that anyone nearby can read unencrypted traffic), band and channel, speed, metered, BSSID, and **Forget** in red: `dd` asks first (`y` forgets), since it can't be undone.
+- **Share** (`Space c q`): a QR code phones scan to join the network you're on (needs qrencode; without it, the password is shown instead). Only when you ask; the password stays hidden until `Space u s`.
+- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): a QR code to join, the name, the password (hidden until `Space u s`), the band and what it shares, the devices connected right now, and `Space p h` (or the switch) to turn it on or off. Name, password and band are settings, read-only until you press `e` or `Enter` on one.
+- A Wi‑Fi on/off switch in the top bar (`Space p p`); on the Hotspot tab it's the hotspot's.
+- **Vim keys** (Vyom 0.7): NORMAL and INSERT modes, counts, `Space` as the leader with a which-key strip, `?` for every key and `Space Space` for a palette of every action.
 - Keyboard first: every action has a key, shown on its button and in the footer; the mouse works too.
 - Never freezes the panel: slow commands run in the background.
 
@@ -69,7 +70,7 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 
 ### Requirements
 
-- [Vyom](https://github.com/Theyashsawarkar/vyom) 0.6 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
+- [Vyom](https://github.com/Theyashsawarkar/vyom) 0.7 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
 - `nmcli`
 - optional: qrencode (QR codes to share a network or join the hotspot)
 
@@ -96,21 +97,56 @@ rm -rf ~/.local/share/vyom/plugins/tarang && vyom reload          # uninstall
 
 ## Usage
 
-Open it with `vyom tarang` (or your key). Type to search; the footer always shows the keys for what's selected.
+Open it with `vyom tarang` (or your key; `vyom tarang hotspot` opens the Hotspot tab). It opens in NORMAL mode, where every letter is a key and typing changes nothing: `j` / `k` move, `H` / `L` switch tabs, `Enter` connects, `dd` forgets (it asks), `/` types a filter (INSERT mode; `Esc` goes back). A password or a hotspot field puts the search box in INSERT mode by itself: `Enter` submits, `Esc` cancels, `Ctrl+S` shows what you type. `Space` is the leader: wait a moment after it and a strip shows what comes next.
+
+<!-- KEYS (generated by scripts/keybinds.py from tarang/vim.py) -->
+
+Vyom's vim keys work too: `?` and `Space ?` list every key, `Space Space` is the palette, `q` closes, `Esc` steps back, `Space u f` is fullscreen, `Space r` refreshes, `j` / `k` move, `gg` / `G` jump, `/` searches.
+
+**Normal mode, Networks (where it opens; `/` types a filter)**
 
 | Key | Action |
 |---|---|
-| `Enter` | Connect to the selected network (asks for its password if needed); on the Hotspot tab, edit the selected setting |
-| `Ctrl+D` | Disconnect from the current network |
-| `Ctrl+F` | Forget the selected saved network (press twice: it can't be undone) |
-| `Ctrl+R` | Rescan for networks |
-| `Ctrl+W` | Turn Wi-Fi on or off |
-| `Ctrl+Q` | Share the current network as a QR code (on the Hotspot tab: show or hide its QR code) |
-| `Ctrl+S` | Show or hide the password (the one you type, a shared network's, the hotspot's) |
-| `Ctrl+T` | Turn the hotspot on or off (Hotspot tab) |
-| `Esc` | Close the panel |
+| `Enter` | Connect to the selected network (asks for its password if needed) |
+| `d d` | Forget the selected saved network (y confirms: its password goes too) |
+| `r` | Rescan for networks now |
 
-Every Vyom panel also has `Up`/`Down` (or `Ctrl+K`/`Ctrl+J`) to move and `Page Up`/`Page Down` to jump; its tabs, its main kinds, switch with `Tab`/`Shift+Tab` (or `Ctrl+H`/`Ctrl+L`), or `Ctrl+1`..`Ctrl+9` for the first to the ninth.
+**Normal mode, Hotspot**
+
+| Key | Action |
+|---|---|
+| `Enter` | Edit the selected hotspot setting (the band: switch it) |
+| `e` | Edit the selected hotspot setting |
+
+**Both modes**
+
+| Key | Action |
+|---|---|
+| `Ctrl+s` | Show or hide the password you type (works while typing) |
+
+**Leader (Space)**
+
+| Key | Action |
+|---|---|
+| `Space p p` | Toggle Wi-Fi on or off |
+| `Space p h` | Toggle the hotspot on or off |
+| `Space c d` | Disconnect from the current network |
+| `Space c q` | Show the current network as a QR code (to share it) |
+| `Space u s` | Toggle the passwords (show or hide them) |
+| `Space y p` | Copy the network's password (the hotspot's on its tab) |
+| `Space y s` | Copy the network's name (the hotspot's on its tab) |
+| `Space d d` | Forget the selected saved network (y confirms) |
+
+**Leader (Space), Hotspot**
+
+| Key | Action |
+|---|---|
+| `Space c q` | Toggle the hotspot's QR code |
+
+Keys that moved in this release still say where they went:
+`Ctrl+f` → `d d`.
+
+<!-- END KEYS -->
 
 ## Configuration
 

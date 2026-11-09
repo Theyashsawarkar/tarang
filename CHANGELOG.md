@@ -2,6 +2,30 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.4.0 -- 2026-11-09
+
+- **Fixed**: while typing a password or a hotspot name, every Ctrl chord but Ctrl+S was swallowed, so Ctrl+V couldn't paste a password and Ctrl+Backspace / Ctrl+A didn't edit; the box's own editing chords work again (Tab and the tool's Ctrl keys stay swallowed).
+- **Vim keys** (Vyom 0.7): tarang opens in NORMAL mode, where letters are
+  keys and typing changes nothing; `/` (or `i`) types a filter, `Esc` goes
+  back. `Space` is the leader, with a which-key strip; `?` lists every key
+  and `Space Space` is a palette of every action. `H` / `L` switch tabs.
+- **A password or a hotspot field types in INSERT mode by itself**: `Enter`
+  submits, `Esc` cancels it, `Ctrl+S` shows it. While you type one, tabs and
+  other keys don't switch away from it any more.
+- **New keys**: `Space p p` / `p h` turn Wi-Fi / the hotspot on or off,
+  `Space c d` disconnects, `Space c q` shares the network as a QR code (on the
+  Hotspot tab: shows or hides its QR code), `Space u s` shows the passwords,
+  `Space y p` / `y s` copy the password / the name, `r` rescans, `e` edits a
+  hotspot setting.
+- **Forget asks with one question**: `dd` (or `Space d d`) asks "Forget …?",
+  `y` forgets and any other key keeps it, instead of pressing `Ctrl+F` twice
+  (`Ctrl+F` now says it moved). `Ctrl+D` scrolls half a page down, as in
+  every vim tool; `Ctrl+W`, `Ctrl+T`, `Ctrl+Q`, `Ctrl+S` and `Ctrl+R` still
+  work.
+- Keys are data (`tarang/vim.py`); `scripts/keybinds.py` writes the
+  `# keybind:` lines and the README table from it (`--check` in CI).
+- Needs Vyom 0.7.0.
+
 ## v0.3.2 -- 2026-11-08
 
 - The footer's keys for Networks and Hotspot come from Vyom's `tab_hints()` (Vyom 0.6.2)

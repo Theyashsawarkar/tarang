@@ -38,5 +38,9 @@ jobs:
                       missing.append(m.group(1))
           assert not missing, f"keys missing from README.md: {missing}"
           EOF
+      - name: Keys match the keymap
+        run: |
+          git clone --depth 1 https://github.com/Theyashsawarkar/vyom /tmp/vyom
+          VYOM_CORE=/tmp/vyom python3 scripts/keybinds.py --check
       - name: Website is up to date
         run: python3 scripts/build-site.py --check

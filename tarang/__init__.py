@@ -22,14 +22,25 @@ from gi.repository import GLib, Gtk, Pango
 from vyom import Hint, Row, Section, ui, util
 from vyom import Plugin as Base
 
-# keybind: Vyom/wifi | Enter | Connect to the selected network (asks for its password if needed)
-# keybind: Vyom/wifi | Ctrl+D | Disconnect from the current network
-# keybind: Vyom/wifi | Ctrl+F | Forget the selected saved network (press twice: it can't be undone)
-# keybind: Vyom/wifi | Ctrl+R | Rescan for networks
-# keybind: Vyom/wifi | Ctrl+W | Turn Wi-Fi on or off
-# keybind: Vyom/wifi | Ctrl+Q | Share the current network as a QR code (on the Hotspot tab: show or hide its QR code)
-# keybind: Vyom/wifi | Ctrl+S | Show or hide the password (the one you type, a shared network's, the hotspot's)
-# keybind: Vyom/wifi | Ctrl+T | Turn the hotspot on or off (Hotspot tab)
+from . import vim
+
+# KEYBINDS (generated from tarang/vim.py by scripts/keybinds.py; don't edit by hand)
+# keybind: Vyom/wifi:normal | Enter | Connect to the selected network (asks for its password if needed)
+# keybind: Vyom/wifi:normal | d d | Forget the selected saved network (y confirms: its password goes too)
+# keybind: Vyom/wifi:normal | r | Rescan for networks now
+# keybind: Vyom/wifi hotspot:normal | Enter | Edit the selected hotspot setting (the band: switch it)
+# keybind: Vyom/wifi hotspot:normal | e | Edit the selected hotspot setting
+# keybind: Vyom/wifi | Ctrl+s | Show or hide the password you type (works while typing)
+# keybind: Vyom/wifi leader:normal | Space p p | Toggle Wi-Fi on or off
+# keybind: Vyom/wifi leader:normal | Space p h | Toggle the hotspot on or off
+# keybind: Vyom/wifi leader:normal | Space c d | Disconnect from the current network
+# keybind: Vyom/wifi leader:normal | Space c q | Show the current network as a QR code (to share it)
+# keybind: Vyom/wifi leader:normal | Space u s | Toggle the passwords (show or hide them)
+# keybind: Vyom/wifi leader:normal | Space y p | Copy the network's password (the hotspot's on its tab)
+# keybind: Vyom/wifi leader:normal | Space y s | Copy the network's name (the hotspot's on its tab)
+# keybind: Vyom/wifi leader:normal | Space d d | Forget the selected saved network (y confirms)
+# keybind: Vyom/wifi hotspot leader:normal | Space c q | Toggle the hotspot's QR code
+# END KEYBINDS
 
 WIFI, WIFI_OFF, LOCK, LOCK_OPEN = "\U000f05a9", "\U000f05aa", "\U000f033e", "\U000f033f"
 STAR, QR, LINK_OFF, SPEED = "\U000f04ce", "\U000f0432", "\U000f0338", "\U000f04c5"
@@ -131,7 +142,7 @@ def why(text, code):
     if "secrets were required" in low or "no secrets" in low or "need auth" in low or "4-way" in low:
         return "Wrong password. Enter tries again with a new one."
     if "no network with ssid" in low or "could not be found" in low or "not found" in low:
-        return "Out of range: the network isn't visible any more. Move closer, or rescan with Ctrl+R."
+        return "Out of range: the network isn't visible any more. Move closer, or rescan with r."
     if "ip configuration" in low or "dhcp" in low:
         return "Joined, but the router didn't hand out an address (DHCP). Try again, or restart the router."
     if "802-1x" in low or "802.1x" in low or "enterprise" in low or "identity" in low:
@@ -170,14 +181,23 @@ def wifi_payload(ssid, password, kind="WPA"):
     return f"WIFI:T:{kind};S:{esc(ssid)};P:{esc(password)};;"
 
 
+# Ctrl+<key> the search box keeps while it's a password or name field: select all,
+# copy, cut, paste, undo, redo, and the word moves and deletes.
+EDIT_CHORDS = {"a", "c", "x", "v", "z", "y", "Z", "BackSpace", "Delete", "KP_Delete", "Left", "Right", "Home", "End"}
+
+
 class Plugin(Base):
     name, title, icon, color = "tarang", "Wi-Fi", WIFI, "sky"
     placeholder = "Filter networks…"
     preview = True
     preview_width = 330
     live = 4
-    hints = [Hint("Enter", "connect"), Hint("Ctrl+Q", "share"), Hint("Ctrl+D", "disconnect"),
-             Hint("Ctrl+F", "forget"), Hint("Ctrl+R", "rescan"), Hint("Ctrl+W", "Wi-Fi on/off")]
+    hints = [Hint("Enter", "connect"), Hint("d d", "forget"), Hint("Space c q", "share"),
+             Hint("Space p p", "Wi-Fi on/off")]
+    typing_hints = [Hint("Enter", "submit"), Hint("Esc", "cancel"), Hint("Ctrl+S", "show")]
+    modal = True                # vim keys (Vyom 0.7): NORMAL first, / filters; a password types in INSERT
+    start_mode = "normal"
+    key_groups = vim.GROUPS
 
     def __init__(self, vyom, conf):
         super().__init__(vyom, conf)
@@ -190,7 +210,6 @@ class Plugin(Base):
         self.scan_asked = 0         # when we last asked NetworkManager to rescan
         self.conn = None            # {"ssid", "step", "state": now/done/failed, "why"} while/after connecting
         self.sharing = None         # {"ssid", "password", "qr", "error", "loading"} after Ctrl+Q
-        self.forget_armed = None    # (ssid, time): the first Ctrl+F
         self.hs_busy = ""           # "starting" / "stopping" / "saving" the hotspot
         self.hs_error = ""
         self.hs_qr = True
@@ -240,9 +259,9 @@ class Plugin(Base):
         if self.switch is None:
             return False
         if self.tab == "hotspot":
-            on, what, tip = bool(self.hs and self.hs.get("on")), "Hotspot", "Hotspot on/off (Ctrl+T)"
+            on, what, tip = bool(self.hs and self.hs.get("on")), "Hotspot", "Hotspot on/off (Space p h)"
         else:
-            on, what, tip = self.snap.get("radio") is True, "Wi-Fi", "Wi-Fi on/off (Ctrl+W)"
+            on, what, tip = self.snap.get("radio") is True, "Wi-Fi", "Wi-Fi on/off (Space p p)"
         self.switch_label.set_label(what)
         self.switch.set_tooltip_text(tip)
         self.switch_on = on
@@ -276,11 +295,16 @@ class Plugin(Base):
         self.update_scan_chip()
         return True
 
-    HOTSPOT_HINTS = [Hint("Ctrl+T", "on / off"), Hint("Ctrl+Q", "QR code"), Hint("Ctrl+S", "show password"),
-                     Hint("Enter", "edit field")]
+    HOTSPOT_HINTS = [Hint("e", "edit"), Hint("Space p h", "on / off"), Hint("Space c q", "QR code"),
+                     Hint("Space u s", "password")]
 
     def tab_hints(self):
         return self.HOTSPOT_HINTS if self.tab == "hotspot" else self.hints
+
+    def mode_hints(self, mode):
+        if self.asking or self.editing:
+            return self.typing_hints
+        return super().mode_hints(mode)
 
     def tab_changed(self, key):
         self.cancel_entry()
@@ -296,7 +320,6 @@ class Plugin(Base):
         super().opened(args)
         self.cancel_entry()
         self.sharing = None
-        self.forget_armed = None
         if self.conn and self.conn["state"] != "now":
             self.conn = None
         if self.tabs:
@@ -318,9 +341,9 @@ class Plugin(Base):
             self.empty_text = snap["error"]
             return []
         if not snap["radio"]:
-            self.empty_text = "Wi-Fi is off: Ctrl+W turns it on"
+            self.empty_text = "Wi-Fi is off: Space p p turns it on"
             return []
-        self.empty_text = "No networks match" if q else "No networks found yet: Ctrl+R rescans"
+        self.empty_text = "No networks match" if q else "No networks found yet: r rescans"
         saved, nearby = [], []
         for n in snap["nets"]:
             if n["active"] or (q and util.fuzzy(q, n["ssid"]) is None):
@@ -450,7 +473,7 @@ class Plugin(Base):
                            self.grow(ui.vbox(ui.hbox(ui.label("Wi-Fi is off", "hero-title"),
                                                      ui.chip("Off", "gray", WIFI_OFF), spacing=8),
                                              ui.label(sub, "hero-sub", xalign=0, wrap=True), spacing=6)),
-                           ui.button("Turn on", lambda: self.set_radio(True), "primary", WIFI, "Ctrl+W"),
+                           ui.button("Turn on", lambda: self.set_radio(True), "primary", WIFI, "Space p p"),
                            color="gray")
         a = s.get("active")
         if not a:
@@ -483,8 +506,8 @@ class Plugin(Base):
         return ui.hero(ui.ring(int(a["signal"] or 0) / 100, lcolor, 68, 7,
                                ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}")),
                        self.grow(text),
-                       ui.vbox(ui.button("Share", self.share, "", QR, "Ctrl+Q"),
-                               ui.button("Disconnect", self.disconnect, "danger", LINK_OFF, "Ctrl+D"), spacing=6),
+                       ui.vbox(ui.button("Share", self.share, "", QR, "Space c q"),
+                               ui.button("Disconnect", self.disconnect, "danger", LINK_OFF, "Space c d"), spacing=6),
                        color="green")
 
     @staticmethod
@@ -565,7 +588,7 @@ class Plugin(Base):
         parts.append(ui.kv(kv, wrap=False))
         btns = [close]
         if pw and sh.get("qr"):
-            btns.insert(0, ui.button("Hide" if self.show_pw else "Show", self.toggle_show, "", EYE, "Ctrl+S"))
+            btns.insert(0, ui.button("Hide" if self.show_pw else "Show", self.toggle_show, "", EYE, "Space u s"))
         pic = None
         if sh.get("qr"):
             pic = ui.picture(sh["qr"], 132)
@@ -618,9 +641,9 @@ class Plugin(Base):
         other = "2.4 GHz" if st.get("band") == "5 GHz" else "5 GHz"
         restart = "restarts the hotspot" if st.get("on") else "starts the hotspot"
         return [Row("Name", st.get("ssid") or "set when it first starts", icon=HOTSPOT, color="teal",
-                    meta="Enter edit", data={"kind": "setting", "field": "ssid"}),
+                    meta="e edit", data={"kind": "setting", "field": "ssid"}),
                 Row("Password", (pw if self.show_pw else "•" * len(pw)) if pw else "generated when it first starts",
-                    icon=KEY, color="teal", meta="Ctrl+S show · Enter edit", data={"kind": "setting", "field": "password"}),
+                    icon=KEY, color="teal", meta="Space u s show · e edit", data={"kind": "setting", "field": "password"}),
                 Row("Band", st.get("band") or "2.4 GHz", icon=WIFI, color="teal",
                     meta=f"Enter: {other}", data={"kind": "setting", "field": "band", "other": other,
                                                   "restart": restart})]
@@ -666,7 +689,7 @@ class Plugin(Base):
             parts = [ui.hbox(ui.label(st.get("ssid", ""), "hero-title"), ui.chip("Sharing", "green", HOTSPOT),
                              spacing=8),
                      ui.label("Scan the code with a phone camera to join. No typing needed." if st.get("qr") and
-                              self.hs_qr else "Ctrl+Q shows a QR code phones scan to join." if st.get("qr") else
+                              self.hs_qr else "Space c q shows a QR code phones scan to join." if st.get("qr") else
                               "Install qrencode for a QR code phones scan to join.",
                               "hero-sub", xalign=0, wrap=True),
                      ui.kv(kv, wrap=False)]
@@ -680,9 +703,9 @@ class Plugin(Base):
                 pic.set_size_request(150, 150)
                 pic.add_css_class("tarang-qr")
             return ui.hero(pic, self.grow(ui.vbox(*parts, spacing=7)),
-                           ui.vbox(ui.button("Turn off", self.toggle_hotspot, "", HOTSPOT, "Ctrl+T"),
-                                   ui.button("Hide QR" if self.hs_qr else "Show QR", self.toggle_qr, "", QR, "Ctrl+Q"),
-                                   ui.button("Hide" if self.show_pw else "Show", self.toggle_show, "", EYE, "Ctrl+S"),
+                           ui.vbox(ui.button("Turn off", self.toggle_hotspot, "", HOTSPOT, "Space p h"),
+                                   ui.button("Hide QR" if self.hs_qr else "Show QR", self.toggle_qr, "", QR, "Space c q"),
+                                   ui.button("Hide" if self.show_pw else "Show", self.toggle_show, "", EYE, "Space u s"),
                                    spacing=6),
                            color="green")
         notes = ["Share this laptop's internet over Wi-Fi: phones join it like any network."]
@@ -697,7 +720,7 @@ class Plugin(Base):
             parts.append(error)
         return ui.hero(ui.ring(0, "gray", 64, 6, ui.label(HOTSPOT, "glyph", "tarang-ring-glyph")),
                        self.grow(ui.vbox(*parts, spacing=7)),
-                       ui.button("Turn on", self.toggle_hotspot, "primary", HOTSPOT, "Ctrl+T"), color="gray")
+                       ui.button("Turn on", self.toggle_hotspot, "primary", HOTSPOT, "Space p h"), color="gray")
 
     # ------------------------------------------------------------ preview
     def build_preview(self, row):
@@ -767,17 +790,13 @@ class Plugin(Base):
                 parts.append(ui.notice(f"Couldn't join {d['ssid']}", c["why"], "red"))
             elif c["state"] == "now":
                 parts.append(ui.steps(self.step_items()))
-        fa = self.forget_armed
-        if fa and fa[0] == d["ssid"] and time.time() - fa[1] < 5:
-            parts.append(ui.notice(f"Forget {d['ssid']}?", "Press Ctrl+F again to forget it. Its saved password "
-                                   "goes too; this can't be undone.", "red"))
         btns = []
         if d["active"]:
-            btns.append(("Disconnect", self.disconnect, "danger", LINK_OFF, "Ctrl+D"))
+            btns.append(("Disconnect", self.disconnect, "danger", LINK_OFF, "Space c d"))
         elif not (skind == "enterprise" and not d["saved"]):
             btns.append(("Connect", lambda: self.connect(d), "primary", LOGIN, "Enter"))
         if d["saved"]:
-            btns.append(("Forget", lambda: self.forget(d), "danger", DELETE, "Ctrl+F"))
+            btns.append(("Forget", lambda: self.forget(d), "danger", DELETE, "d d"))
         if btns:
             parts.append(ui.buttons(btns))
         return ui.vbox(*parts, spacing=14)
@@ -891,6 +910,7 @@ class Plugin(Base):
         e.set_text("")
         e.set_visibility(False)
         e.set_placeholder_text(f"Password for {n['ssid']}")
+        self.set_vim_mode("insert")
         self.after_change()
 
     def edit_field(self, field):
@@ -901,6 +921,7 @@ class Plugin(Base):
         e.set_visibility(field != "password" or self.show_pw)
         e.set_placeholder_text("New hotspot name" if field == "ssid" else "New hotspot password (8+ characters)")
         e.set_text(st.get(field, "") if field == "ssid" else "")
+        self.set_vim_mode("insert")
         e.set_position(-1)
         self.after_change()
 
@@ -910,6 +931,8 @@ class Plugin(Base):
             e.set_visibility(True)
             e.set_placeholder_text(self.placeholder)
             e.set_text("")
+            self.asking = self.editing = None
+            self.set_vim_mode("normal")
         self.asking = self.editing = None
 
     def submit_password(self):
@@ -955,23 +978,21 @@ class Plugin(Base):
                         lambda _r: (self.set_status(""), self.refresh()))
 
     def forget(self, n):
+        """Asks first (y forgets, any other key keeps it): its saved password goes too."""
         if not n.get("conn"):
-            self.set_status(f"{n['ssid']} isn't saved")
+            self.set_status(f"{n['ssid']} isn't saved", "bad")
             return
-        fa = self.forget_armed
-        if not (fa and fa[0] == n["ssid"] and time.time() - fa[1] < 5):
-            self.forget_armed = (n["ssid"], time.time())
-            self.panel.update_preview_soon()
-            GLib.timeout_add_seconds(5, lambda: (self.panel and self.panel.update_preview(), False)[1])
-            return
-        self.forget_armed = None
-        self.ssid_cache.pop(n["conn"], None)
 
-        def done(r):
-            code = r[0] if isinstance(r, tuple) else 1
-            self.set_status(f"forgot {n['ssid']}" if code == 0 else f"couldn't forget {n['ssid']}")
-            self.refresh()
-        self.background(lambda: util.run(["nmcli", "connection", "delete", "uuid", n["conn"]]), done)
+        def go():
+            self.ssid_cache.pop(n["conn"], None)
+
+            def done(r):
+                code = r[0] if isinstance(r, tuple) else 1
+                self.set_status(f"forgot {n['ssid']}" if code == 0 else f"couldn't forget {n['ssid']}",
+                                "ok" if code == 0 else "bad")
+                self.refresh()
+            self.background(lambda: util.run(["nmcli", "connection", "delete", "uuid", n["conn"]]), done)
+        self.confirm(f"Forget {n['ssid']}? Its saved password goes too; this can't be undone.", go)
 
     def share(self):
         a = self.snap.get("active")
@@ -1076,35 +1097,86 @@ class Plugin(Base):
                 self.after_change()
                 return True
             return False
-        if mods != {"ctrl"}:
-            return False
-        d = (row.data or {}) if row is not None else {}
-        if name == "s":
-            self.toggle_show()
-        elif self.asking or self.editing:
-            return name not in ("h", "l") and not name.isdigit()   # nothing else while typing a field
-        elif name == "w":
-            self.set_radio(not self.snap.get("radio"))
-        elif self.tab == "hotspot":
-            if name == "t":
-                self.toggle_hotspot()
-            elif name == "q":
-                self.toggle_qr()
-            else:
-                return False
-        elif name == "d":
-            self.disconnect()
-        elif name == "f":
-            if d.get("kind") == "net":
-                self.forget(d)
-        elif name == "r":
-            self.rescan()
-            self.refresh()
-        elif name == "q":
-            self.share()
+        if self.asking or self.editing:
+            # Typing a field: Enter submits, Ctrl+S shows it; no tab switching or other actions,
+            # but the box's own editing chords (paste a password, delete a word) still work.
+            if name in ("Tab", "ISO_Left_Tab") or (mods == {"ctrl"} and name != "s" and name not in EDIT_CHORDS):
+                return True
+        return False
+
+    # ------------------------------------------------------------ vim keys
+    def keys(self, tab):
+        return vim.keys(tab)
+
+    def selected(self):
+        row = self.panel.selected_row() if self.panel else None
+        return (row.data or {}) if row is not None else {}
+
+    def v_radio(self, _n, _a):
+        self.set_radio(not self.snap.get("radio"))
+
+    def v_hotspot(self, _n, _a):
+        if not self.tabs:
+            self.set_status("no hotspot command here (vayu-hotspot)", "bad")
+            return
+        if self.hs is None:
+            self.select_tab("hotspot")   # reads its state first; Space p h again toggles it
+            return
+        self.toggle_hotspot()
+
+    def v_share(self, _n, _a):
+        if self.tab == "hotspot":
+            self.toggle_qr()
         else:
-            return False
-        return True
+            self.share()
+
+    def v_showpw(self, _n, _a):
+        self.toggle_show()
+
+    def v_rescan(self, _n, _a):
+        self.rescan()
+        self.refresh()
+
+    def v_refresh(self, n, a):
+        self.v_rescan(n, a)
+
+    def v_disconnect(self, _n, _a):
+        self.disconnect()
+
+    def v_forget(self, _n, _a):
+        d = self.selected()
+        if d.get("kind") != "net":
+            self.set_status("no network selected", "bad")
+            return
+        self.forget(d)
+
+    def v_copy(self, _n, what):
+        if self.tab == "hotspot":
+            st = self.hs or {}
+            text = st.get(what if what == "ssid" else "password", "")
+            self.done_copy(text, what)
+            return
+        d = self.selected()
+        n = d if d.get("kind") == "net" else self.snap.get("active") or {}
+        if not n:
+            self.set_status("no network selected", "bad")
+            return
+        if what == "ssid":
+            self.done_copy(n.get("ssid", ""), what)
+            return
+        if not n.get("conn"):
+            self.set_status(f"{n.get('ssid', 'it')} isn't saved: no password to copy", "bad")
+            return
+        self.background(lambda: util.run(["nmcli", "-s", "-g", "802-11-wireless-security.psk", "connection", "show",
+                                          "uuid", n["conn"]])[1].strip(),
+                        lambda pw: self.done_copy(pw if isinstance(pw, str) else "", what))
+
+    def done_copy(self, text, what):
+        if not text:
+            self.set_status(f"no {'name' if what == 'ssid' else 'password'} to copy", "bad")
+            return
+        util.copy(text)
+        self.set_status("copied the name" if what == "ssid" else "copied the password", "ok")
 
     def closed(self):
         self.cancel_entry()
