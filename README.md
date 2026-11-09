@@ -24,16 +24,16 @@
   <a href="https://github.com/Theyashsawarkar/tarang/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Theyashsawarkar/tarang/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://github.com/Theyashsawarkar/tarang/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Theyashsawarkar/tarang?color=cba6f7&label=release"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-f5e0dc"></a>
-  <a href="https://github.com/Theyashsawarkar/vyom"><img alt="Vyom 0.6+" src="https://img.shields.io/badge/vyom-0.6%2B-89b4fa"></a>
+  <a href="https://github.com/Theyashsawarkar/vyom"><img alt="Vyom 0.7+" src="https://img.shields.io/badge/vyom-0.7%2B-89b4fa"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-a6e3a1">
   <img alt="Wayland" src="https://img.shields.io/badge/wayland-layer--shell-94e2d5">
 </p>
 
 <p align="center">
-  <img alt="tarang: the network you're on as a card with its signal ring, speed, band, security and address, Share and Disconnect; saved networks starred and nearby ones with signal bars and a word; the selected network's signal meter, security and Forget" src="assets/screenshots/tarang.png" width="100%">
+  <img alt="tarang: on the left the network you're on as a card (signal ring, live download and upload, Share and Disconnect) over the list (connected, saved, nearby); on the right its live view: download and upload speeds with peak and average, the last minute as a graph, data received and sent, the signal with its own line, and internet state, security, band, IP, router, link rate, DNS, access point and IPv6" src="assets/screenshots/tarang.png" width="100%">
 </p>
 <p align="center">
-  <img alt="tarang's Hotspot tab: a QR code to join, the name, hidden password, band and what it shares; the connected devices; the settings, read-only until Enter" src="assets/screenshots/tarang-hotspot.png" width="100%">
+  <img alt="tarang's Hotspot tab: a QR code to join, the name, hidden password, band and what it shares; the connected devices; the settings, read-only until Enter; on the right the hotspot's live traffic (from and to its devices) over the last minute" src="assets/screenshots/tarang-hotspot.png" width="100%">
 </p>
 <p align="center"><sub>Screenshots use made-up demo networks.</sub></p>
 
@@ -54,14 +54,15 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 
 ## Features
 
-- **The network you're on, at a glance**: a card at the top with a signal ring, link speed, band and channel, security and your address, and its **Share** (`Space c q`) and **Disconnect** (`Space c d`) buttons. Not connected, it says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
+- **The network you're on, at a glance**: a card at the top with a signal ring, band and channel, your download and upload right now, and its **Share** (`Space c q`) and **Disconnect** (`Space c d`) buttons. It's also the first row of the list, under **Connected**. Not connected, the card says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
+- **Live speeds on the right**: with the network you're on picked (it is when the panel opens), the right side shows download and upload as big numbers with their peak and average, **the last minute as a graph** (peaks marked), data received and sent, how long you've been connected (and since when), the signal with its own line and dBm, and every fact in one place: internet (Online, Limited, Sign in, No internet), security, band and channel, IP address, router, link rate (both ways, from `iw` when it's there), DNS, access point and IPv6. It moves once a second, and only while the panel is open: tarang reads the card's own byte counters (`/sys/class/net`) and signal (`/proc/net/wireless`), so it never sends anything to measure (no speed test, no ping).
 - **Signal as bars and a word** (Excellent, Good, Fair, Weak in green, green, yellow, red), saved networks starred, then nearby ones, strongest first. Open networks get a yellow **Open** chip, WEP/WPA1 a red one. Scanning shows in the top bar ("Scanning…", then "Scanned 8 s ago"); `r` rescans.
 - `Enter` connects; a secured network you haven't joined asks for its **password right in the search box** (hidden; `Ctrl+S` shows it), and nothing is sent until you press `Enter`.
 - **Connecting shows its steps** (Associating, Authenticating, Getting an address), read from NetworkManager as they happen. When it fails it says **why** in red: wrong password (and asks again), out of range, no address from the router, a network that needs a user name (WPA Enterprise), a password that's too short.
-- The preview: a signal meter with what it means in plain words ("Fine for video calls"), security as a chip (WPA3 strong, WPA2 good, Open with a warning that anyone nearby can read unencrypted traffic), band and channel, speed, metered, BSSID, and **Forget** in red: `dd` asks first (`y` forgets), since it can't be undone.
+- Another network picked: its signal and **how it compares with the one you're on** ("17 points weaker than Home Fiber 5G"), security as a chip (WPA3 strong, WPA2 good, Open with a warning that anyone nearby can read unencrypted traffic), band, channel and frequency, top speed, saved or new, metered, access point, and **Connect** / **Forget** in red: `dd` asks first (`y` forgets), since it can't be undone.
 - **Share** (`Space c q`): a QR code phones scan to join the network you're on (needs qrencode; without it, the password is shown instead). Only when you ask; the password stays hidden until `Space u s`.
-- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): a QR code to join, the name, the password (hidden until `Space u s`), the band and what it shares, the devices connected right now, and `Space p h` (or the switch) to turn it on or off. Name, password and band are settings, read-only until you press `e` or `Enter` on one.
-- A Wi‑Fi on/off switch in the top bar (`Space p p`); on the Hotspot tab it's the hotspot's.
+- A **Hotspot tab** (with Vayu's `vayu-hotspot`, or any command with its `status --json` / `on` / `off` interface): a QR code to join, the name, the password (hidden until `Space u s`), the band and what it shares, the devices connected right now, the hotspot's own traffic live on the right (from and to its devices, the last minute, totals), and `Space p h` (or the switch) to turn it on or off. Name, password and band are settings, read-only until you press `e` or `Enter` on one.
+- A Wi‑Fi on/off switch in the top bar (`Space p p`); on the Hotspot tab it's the hotspot's. With Wi‑Fi off the list has one row, **Wi‑Fi is off**: `Enter` turns it on.
 - **Vim keys** (Vyom 0.7): NORMAL and INSERT modes, counts, `Space` as the leader with a which-key strip, `?` for every key and `Space Space` for a palette of every action.
 - Keyboard first: every action has a key, shown on its button and in the footer; the mouse works too.
 - Never freezes the panel: slow commands run in the background.
@@ -73,6 +74,7 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 - [Vyom](https://github.com/Theyashsawarkar/vyom) 0.7 or newer (Python 3.11+, PyGObject, GTK 4, [gtk4-layer-shell](https://github.com/wmww/gtk4-layer-shell), a Nerd Font)
 - `nmcli`
 - optional: qrencode (QR codes to share a network or join the hotspot)
+- optional: iw (the link rate both ways in the live view)
 
 ### Install
 

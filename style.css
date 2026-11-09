@@ -1,5 +1,5 @@
 /* tarang */
-.tarang-ring-glyph { font-size: 28px; }
+.tarang-ring-glyph { font-size: 24px; }
 .tarang-switch-label { color: @subtext0; font-size: 12.5px; font-weight: 600; }
 .tarang-mono { font-family: "JetBrainsMono Nerd Font"; }
 /* a QR code needs a light quiet zone to scan, whatever the theme */
@@ -17,3 +17,35 @@ button.tarang-onoff.on .tarang-knob { background: @green; }
 .plugin-tarang progressbar.m-green progress { background: @green; }
 .plugin-tarang progressbar.m-yellow progress { background: @yellow; }
 .plugin-tarang progressbar.m-red progress { background: @red; }
+
+/* ---- the live view (the network you're on, the hotspot) ---- */
+/* Download and upload in two colours that carry no warning: sky and lavender. */
+.tarang-rx { color: @sky; }
+.tarang-tx { color: @lavender; }
+.tarang-grid { color: alpha(white, 0.09); }
+.tarang-axis { color: @overlay0; }
+.tarang-live-dot { color: @green; font-size: 9px; }
+.tarang-live { color: @overlay1; font-size: 10.5px; font-weight: 800; letter-spacing: 1.5px; }
+.tarang-dash-ssid { font-size: 13.5px; font-weight: 700; color: @text; }
+.tarang-since { color: @subtext0; font-size: 12px; font-weight: 600; }
+.tarang-since-icon { color: @overlay1; font-size: 12.5px; }
+.tarang-stat { padding: 8px 12px 7px 12px; border-radius: 14px; border: 1px solid alpha(white, 0.06); }
+.tarang-stat-rx { background: linear-gradient(to bottom, alpha(@sky, 0.11), alpha(white, 0.02)); }
+.tarang-stat-tx { background: linear-gradient(to bottom, alpha(@lavender, 0.11), alpha(white, 0.02)); }
+.tarang-stat-name { color: @subtext0; font-size: 11.5px; font-weight: 600; }
+.tarang-arrow { font-size: 13px; }
+.tarang-num { font-size: 28px; font-weight: 800; font-feature-settings: "tnum"; }
+.tarang-unit { color: @overlay2; font-size: 13px; font-weight: 600; }
+.tarang-stat-sub { color: @overlay1; font-size: 11px; font-feature-settings: "tnum"; }
+.tarang-graph-card { padding: 8px 10px 6px 10px; border-radius: 14px; background: alpha(white, 0.03);
+  border: 1px solid alpha(white, 0.06); }
+.tarang-cell { padding: 6px 10px; border-radius: 12px; background: alpha(white, 0.03); border: 1px solid alpha(white, 0.05); }
+.tarang-cell-key { color: @overlay1; font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; }
+.tarang-cell-val { color: @text; font-size: 12.5px; font-weight: 600; font-feature-settings: "tnum"; }
+.tarang-sig-word { font-size: 12.5px; font-weight: 700; }
+.tarang-dbm { color: @overlay1; font-family: "JetBrainsMono Nerd Font"; font-size: 11px; }
+.tarang-note { color: @overlay1; font-size: 11.5px; }
+.tarang-hint { color: @overlay1; font-size: 11.5px; margin-right: 8px; }
+.tarang-strip-rate { color: @subtext0; font-size: 12px; font-weight: 600; font-feature-settings: "tnum"; }
+.tarang-since-at { color: @overlay1; font-size: 11.5px; }
+.tarang-pill { color: alpha(@crust, 0.82); }

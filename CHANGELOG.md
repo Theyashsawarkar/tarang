@@ -2,6 +2,16 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## v0.5.0 -- 2026-11-09
+
+- **Live speeds on the right.** With the network you're on picked (it is when the panel opens), the right side is a live view: download and upload as big numbers (sky and lavender) with their peak and average, **the last minute as a graph** with the peaks marked, data received and sent, how long you've been connected and since when (NetworkManager's log), the signal with its own line and dBm, and every fact at a glance: internet (Online, Limited, Sign in, No internet, from NetworkManager), security, band and channel, IP, router, link rate both ways (`iw`, when it's there), DNS, access point, IPv6. It moves once a second, only while the panel is open, and reads the card's own counters (`/sys/class/net/<card>/statistics`, `/proc/net/wireless`): nothing is sent to measure it.
+- **The list was empty while you were connected** ("No networks found yet") when the network you're on was the only one in range: it was left out of the list. It's now the first row, under **Connected**.
+- **Another network picked**: its signal compared with the one you're on ("17 points weaker than Home Fiber 5G"), and its facts in the same tidy boxes (security, band, frequency, top speed, saved, access point, metered).
+- **The hotspot's traffic, live**: on the Hotspot tab, while it's on, the right side shows what its devices send and get (the last minute, totals) above the picked device or setting.
+- **Wi‑Fi off is a row**: `Enter` on it turns Wi‑Fi on, and the right side says what's going on (offline, or online over Ethernet).
+- A tighter card at the top: a smaller ring, signal and band, and your download and upload right now (so they're in sight with the right side hidden, `Space u p`); the card's buttons keep their keys in their tooltips and the footer, and the hotspot's QR code is a fixed size, so the panel never grows wider than its own size.
+- New unit tests (`tests/test_speed.py`, run in CI) for the speeds, units, the graph's scale and the sampler.
+
 ## v0.4.0 -- 2026-11-09
 
 - **Fixed**: while typing a password or a hotspot name, every Ctrl chord but Ctrl+S was swallowed, so Ctrl+V couldn't paste a password and Ctrl+Backspace / Ctrl+A didn't edit; the box's own editing chords work again (Tab and the tool's Ctrl keys stay swallowed).
