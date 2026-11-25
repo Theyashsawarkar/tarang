@@ -407,7 +407,7 @@ class Plugin(Base):
             (here if n["active"] else saved if n["saved"] else nearby).append(self.net_row(n))
         rows = []
         if here:   # the network you're on first: its row opens the live view
-            rows += [Section("Connected", "", "live speeds on the right")] + here
+            rows += [Section("Connected", "", "")] + here
         if saved:
             rows += [Section("Saved", len(saved), "Enter connects")] + saved
         if nearby:
@@ -482,12 +482,10 @@ class Plugin(Base):
     def net_row(self, n):
         name, color, _word, kind = security(n["security"])
         lv, word, lcolor, _ = quality(n["signal"])
-        extra = ago(n.get("ts")) if n["saved"] else ("asks for a user name" if kind == "enterprise" else "")
+        extra = "connected" if n["active"] else ago(n.get("ts")) if n["saved"] else ("asks for a user name" if kind == "enterprise" else "")
         sub = " · ".join(x for x in (name, band(n["freq"]), extra) if x)
         chips = []
         c = self.conn
-        if n["active"] and not (c and c["ssid"] == n["ssid"]):
-            chips.append(("Connected", "green"))
         if c and c["ssid"] == n["ssid"]:
             chips.append(("Connecting…", "yellow") if c["state"] == "now" else
                          ("Failed", "red") if c["state"] == "failed" else ("Connected", "green"))
@@ -495,8 +493,7 @@ class Plugin(Base):
             chips.append(("Open", "yellow"))
         elif kind == "weak":
             chips.append((f"{name}: weak", "red"))
-        return Row(n["ssid"], sub, icon=WIFI, color="sky" if n["saved"] else "yellow" if kind == "open" else "gray",
-                   badge=STAR if n["saved"] else "", badge_color="yellow",
+        return Row(n["ssid"], sub, icon=WIFI, color="green" if n["active"] else "yellow" if kind == "open" else "gray",
                    chips=chips, level=lv, level_text=word, level_color=lcolor, data={"kind": "net", **n})
 
     def saved(self):
@@ -570,23 +567,10 @@ class Plugin(Base):
                                              ui.label("Pick a network below and press Enter to join it.",
                                                       "hero-sub", xalign=0, wrap=True), spacing=6)),
                            color="gray")
-        lv, word, lcolor, _ = quality(a["signal"])
-        sname, _sc, _sw, _k = security(a["security"])
-        chips = [(f"{word} · {a['signal']}%", lcolor, WIFI), (f"{band(a['freq'])} · ch {a['chan']}", "gray")]
-        if sname == "Open":
-            chips.append(("Open", "yellow", LOCK_OPEN))
-        self.strip_rate = ui.label("", "tarang-strip-rate", xalign=0)
-        text = ui.vbox(ui.hbox(ui.label(a["ssid"], "hero-title", ellipsize=Pango.EllipsizeMode.END),
-                               ui.chip("Connected", "green", CHECK), spacing=8),
-                       ui.chips(*chips), self.strip_rate, spacing=6)
-        GLib.idle_add(lambda: (self.update_live(), False)[1])
-        return ui.hero(ui.ring(int(a["signal"] or 0) / 100, lcolor, 56, 6,
-                               ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}")),
-                       self.grow(text),
-                       ui.vbox(self.tip(ui.button("Share", self.share, "", QR), "Space c q"),
-                               self.tip(ui.button("Disconnect", self.disconnect, "danger", LINK_OFF), "Space c d"),
-                               spacing=6),
-                       color="green")
+        # Connected: no card here. The network is the list's first row and the
+        # right side is its live view (speeds, graph, details, actions), so
+        # nothing is said twice.
+        return None
 
     @staticmethod
     def tip(button, keys):
@@ -911,65 +895,70 @@ class Plugin(Base):
         tx, tx_w = self.stat("tx", UP, labels[1])
         graph = live.Graph(self.traffic, labels=short)
         self.live_w = {"rx": rx_w, "tx": tx_w, "graph": graph}
-        return ui.vbox(ui.hbox(rx, tx, spacing=10, cls="tarang-stats"),
-                       ui.vbox(graph, cls="tarang-graph-card"), spacing=10)
+        return ui.vbox(ui.hbox(rx, tx, spacing=10, cls="tarang-stats"), graph, spacing=8, cls="tarang-live-card")
+
+    def facts(self, pairs):
+        """Label / value lines in one quiet glass card (instead of a wall of tiles)."""
+        g = Gtk.Grid(column_spacing=16, row_spacing=7)
+        for i, (k, v) in enumerate(pairs):
+            g.attach(ui.label(k, "kv-key", xalign=0), 0, i, 1, 1)
+            if isinstance(v, str):
+                v = ui.label(v or "—", "kv-val", "tarang-fact", xalign=0, ellipsize=Pango.EllipsizeMode.MIDDLE, hexpand=True)
+                v.set_tooltip_text(v.get_label())
+            g.attach(v, 1, i, 1, 1)
+        return ui.vbox(g, cls="tarang-facts")
+
+    def head(self, ssid, ring, meta):
+        """The network's name, a signal ring and a line under it."""
+        text = ui.vbox(ui.label(ssid, "tarang-title", xalign=0, ellipsize=Pango.EllipsizeMode.END), meta, spacing=4)
+        text.set_valign(Gtk.Align.CENTER)
+        text.set_hexpand(True)
+        return ui.hbox(ring, text, spacing=14)
 
     def dashboard(self, a):
-        """The network you're on: live speeds, the minute's graph, totals, the
-        signal and every address, at a glance."""
+        """The network you're on: who it is, live speeds over the last minute,
+        the details in one list, and what you can do."""
         s = self.snap
         lv, word, lcolor, note = quality(a["signal"])
         sname, scolor, sword, skind = security(a["security"])
         since = s.get("since")
-        head = ui.hbox(ui.label("\u25CF", "tarang-live-dot"), ui.label("LIVE", "tarang-live"),
-                       ui.label(a["ssid"], "tarang-dash-ssid", xalign=0, hexpand=True,
-                                ellipsize=Pango.EllipsizeMode.END), spacing=6)
-        block = self.live_block()
+        internet = INTERNET.get(s.get("internet") or "unknown", INTERNET["unknown"])
+        ring = ui.ring(int(a["signal"] or 0) / 100, lcolor, 54, 5, ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}"))
+        ring.set_tooltip_text(note)
+        meta = ui.hbox(ui.chip(internet[0], internet[1], internet[2]), spacing=8)
+        self.live_w = {}
         if since:
             dur = ui.label(live.duration_text(time.time() - since), "tarang-since")
             at = time.strftime("%H:%M" if time.time() - since < 86400 else "%d %b %H:%M", time.localtime(since))
-            clock = ui.hbox(ui.label(CLOCK, "glyph", "tarang-since-icon"), dur,
-                            ui.label(f"since {at}", "tarang-since-at"), spacing=5)
-            clock.set_tooltip_text(f"Connected at {at}")
-            head.append(clock)
+            line = ui.hbox(ui.label("Connected for", "tarang-since-at"), dur, spacing=4)
+            line.set_valign(Gtk.Align.CENTER)
+            line.set_tooltip_text(f"Connected at {at}")
+            meta.append(line)
+        head = self.head(a["ssid"], ring, meta)
+        block = self.live_block()
+        if since:
             self.live_w.update({"since": dur, "since_ts": since})
-        # received, sent and the signal side by side
-        got = ui.label("", "tarang-cell-val", "tarang-rx", xalign=0)
-        sent = ui.label("", "tarang-cell-val", "tarang-tx", xalign=0)
-        spark = live.Spark(self.traffic, lcolor)
-        dbm = ui.label("", "tarang-dbm", xalign=1, hexpand=True)
-        sig = ui.vbox(ui.hbox(ui.label("Signal", "tarang-cell-key", xalign=0), dbm, spacing=6),
-                      ui.label(f"{word} · {a['signal']}%", "tarang-sig-word", f"t-{lcolor}", xalign=0), spacing=3,
-                      cls="tarang-cell")
-        sig.append(spark)
-        sig.set_tooltip_text(note)
-        sig.set_hexpand(True)
-        self.live_w.update({"total_rx": got, "total_tx": sent, "spark": spark, "dbm": dbm})
-        trow = Gtk.Box(spacing=8, homogeneous=True)
-        for c in (self.cell("Received", got), self.cell("Sent", sent), sig):
-            trow.append(c)
-        trow.set_tooltip_text("Received and sent: since the Wi-Fi card came up")
-        internet = INTERNET.get(s.get("internet") or "unknown", INTERNET["unknown"])
+        got = ui.label("", "tarang-total", "tarang-rx")
+        sent = ui.label("", "tarang-total", "tarang-tx")
+        totals = ui.hbox(got, ui.label("received", "tarang-since-at"), ui.label("·", "tarang-since-at"),
+                         sent, ui.label("sent", "tarang-since-at"), spacing=5)
+        totals.set_tooltip_text("Since the Wi-Fi card came up")
+        block.append(totals)
+        self.live_w.update({"total_rx": got, "total_tx": sent})
         link = s.get("link") or {}
         if link.get("rx_rate") or link.get("tx_rate"):
-            linktext = f"↓ {link.get('rx_rate', 0):.0f} ↑ {link.get('tx_rate', 0):.0f} Mb/s"
+            linktext = f"↓ {link.get('rx_rate', 0):.0f}  ↑ {link.get('tx_rate', 0):.0f} Mb/s"
         else:
             linktext = rate(a.get("rate")) or "—"
-        mhz = (a.get("freq") or "").replace(" MHz", "")
-        bandcell = self.cell("Band", f"{band(a['freq'])} · ch {a['chan']}")
-        if mhz:
-            bandcell.set_tooltip_text(f"{mhz} MHz")
-        facts = [self.cell("Internet", ui.chip(*internet)),
-                 self.cell("Security", ui.chip(f"{sname} · {sword}", scolor, SHIELD if skind in ("strong", "ok")
-                                               else LOCK_OPEN if skind == "open" else ALERT)),
-                 bandcell,
-                 self.cell("IP address", s.get("ip") or "—"),
-                 self.cell("Router", s.get("gateway") or "—"),
-                 self.cell("Link rate", linktext),
-                 self.cell("DNS", s.get("dns") or "—", wide=False),
-                 self.cell("Access point", a.get("bssid") or "—"),
-                 self.cell("IPv6", s.get("ip6") or "none")]
-        parts = [head, block, trow, self.cells(facts, 3)]
+        sec = ui.label(f"{sname} · {sword}", "kv-val", f"t-{scolor}" if skind in ("open", "weak") else "tarang-fact",
+                       xalign=0, hexpand=True)
+        facts = self.facts([("Signal", f"{word} · {a['signal']}%"), ("Security", sec),
+                            ("Band", f"{band(a['freq'])} · channel {a['chan']}"), ("Link rate", linktext),
+                            ("IP address", s.get("ip") or "—"), ("Router", s.get("gateway") or "—"),
+                            ("DNS", s.get("dns") or "—"), ("IPv6", s.get("ip6") or "none"),
+                            ("Access point", a.get("bssid") or "—")])
+        btns = [("Share", self.share, "", QR, "Space c q"), ("Disconnect", self.disconnect, "danger", LINK_OFF, "Space c d")]
+        parts = [head, ui.buttons(btns), block]
         if s.get("internet") in ("limited", "none"):
             parts.append(ui.notice("Joined, but no internet", "The router answers, but nothing gets past it: restart "
                                    "the router, or check the line.", "yellow" if s.get("internet") == "limited"
@@ -979,13 +968,14 @@ class Plugin(Base):
                                    "website in a browser to get it.", "peach", LOGIN))
         if a.get("metered") in ("yes", "guess-yes"):
             parts.append(ui.notice("Metered", "This network counts against a data plan: big downloads cost.", "yellow"))
-        return ui.vbox(*parts, spacing=10, cls="tarang-dash")
+        parts.append(facts)
+        return ui.vbox(*parts, spacing=14, cls="tarang-dash")
 
     def hotspot_live(self):
         """The hotspot's own traffic: what the devices on it send and get."""
         st = self.hs or {}
         n = st.get("client_count", len(st.get("clients", [])))
-        head = ui.hbox(ui.label("\u25CF", "tarang-live-dot"), ui.label("LIVE", "tarang-live"),
+        head = ui.hbox(ui.label("\u25CF", "tarang-live-dot"),
                        ui.label(st.get("ssid", "Hotspot"), "tarang-dash-ssid", xalign=0, hexpand=True,
                                 ellipsize=Pango.EllipsizeMode.END),
                        ui.chip(f"{n} device{'s' if n != 1 else ''}", "green" if n else "gray", PHONE), spacing=6)
@@ -1019,8 +1009,8 @@ class Plugin(Base):
         sname, scolor, sword, skind = security(d["security"])
         state = ("Saved" + (f" · {ago(d['ts'])}" if ago(d["ts"]) else "")) if d["saved"] \
             else "New: you haven't joined it"
-        parts = [ui.hbox(bigtile(WIFI, "sky" if d["saved"] else "gray"),
-                         ui.vbox(ui.title(d["ssid"]), ui.meta(state), spacing=2), spacing=12)]
+        ring = ui.ring(int(d["signal"] or 0) / 100, lcolor, 54, 5, ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}"))
+        parts = [self.head(d["ssid"], ring, ui.label(state, "tarang-since-at", xalign=0))]
         # the signal, and how it compares with the network you're on
         cur = self.snap.get("active")
         cmp = ""
@@ -1034,18 +1024,14 @@ class Plugin(Base):
                       ui.label(cmp or note, "tarang-note", xalign=0, wrap=True), spacing=6, cls="tarang-cell")
         parts.append(sig)
         mhz = (d.get("freq") or "").replace(" MHz", "")
-        facts = [self.cell("Security", ui.chip(f"{sname} · {sword}", scolor, SHIELD if skind in ("strong", "ok") else
-                                               LOCK_OPEN if skind == "open" else ALERT if skind == "weak" else LOCK)),
-                 self.cell("Band", f"{band(d['freq'])} · ch {d['chan']}"),
-                 self.cell("Frequency", f"{mhz} MHz" if mhz else "—"),
-                 self.cell("Up to", rate(d.get("rate")) or "—"),
-                 self.cell("Saved", "yes" if d["saved"] else "no"),
-                 self.cell("Access point", d["bssid"] or "—")]
+        sec = ui.label(f"{sname} · {sword}", "kv-val", f"t-{scolor}" if skind in ("open", "weak") else "tarang-fact",
+                       xalign=0, hexpand=True)
+        facts = [("Security", sec), ("Band", f"{band(d['freq'])} · channel {d['chan']}"),
+                 ("Frequency", f"{mhz} MHz" if mhz else "—"), ("Up to", rate(d.get("rate")) or "—"),
+                 ("Access point", d["bssid"] or "—")]
         if d.get("metered") in ("yes", "guess-yes"):
-            metered = self.cell("Metered", ui.chip("Yes", "yellow"))
-            metered.set_tooltip_text("It counts against a data plan")
-            facts.append(metered)
-        parts.append(self.cells(facts, 3))
+            facts.append(("Metered", "Yes: it counts against a data plan"))
+        parts.append(self.facts(facts))
         if skind == "open":
             parts.append(ui.notice("Open network", "Anyone nearby can read unencrypted traffic. Prefer https "
                                    "sites or a VPN here.", "yellow"))
