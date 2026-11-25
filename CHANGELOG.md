@@ -2,6 +2,11 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **Spatial look**: rounder, borderless glass cards for the live view.
+- The website has Vayu's Spatial look: graphite glass, a floating navigation bar, near-white for links and the main button, and the tool's own colour only as its signature (the logo's glow, the shloka's line, the release dots). No more all-caps labels.
+
 ## v0.5.0 -- 2026-11-09
 
 - **Live speeds on the right.** With the network you're on picked (it is when the panel opens), the right side is a live view: download and upload as big numbers (sky and lavender) with their peak and average, **the last minute as a graph** with the peaks marked, data received and sent, how long you've been connected and since when (NetworkManager's log), the signal with its own line and dBm, and every fact at a glance: internet (Online, Limited, Sign in, No internet, from NetworkManager), security, band and channel, IP, router, link rate both ways (`iw`, when it's there), DNS, access point, IPv6. It moves once a second, only while the panel is open, and reads the card's own counters (`/sys/class/net/<card>/statistics`, `/proc/net/wireless`): nothing is sent to measure it.
