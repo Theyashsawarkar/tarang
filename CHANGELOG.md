@@ -4,6 +4,7 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+- **Works every time, no reboot.** Joining a network tries again (up to three times) when the failure is one a second try fixes: no answer in time, the card not ready (its radio is restarted first), DHCP, a link that dropped half-way; a wrong password or a network out of sight is said at once. A card stuck "unavailable" (mostly after sleep) shows "Wi-Fi isn't answering" with **Reset Wi-Fi** (`Enter`), which turns the radio off and on; saved networks join again by themselves.
 - The network's view shows just its Wi-Fi icon beside the name (coloured by signal, its percentage in the details), no ring around it.
 - New screenshots in the Spatial look, taken with made-up demo data (WebP, sharp on high-density screens).
 - **A calmer Wi-Fi panel.** The network you're on is no longer said twice (a card above the list and a row in it): it's the list's first row, and the right side is its live view: its name with its Wi-Fi icon, Online and how long, Share and Disconnect, the speeds and the minute's graph in one card with what was received and sent, then the details (signal, security, band, link rate, addresses) as one quiet list instead of twelve tiles. Other networks show the same way. Rows keep chips only where they mean something (Open, weak security, connecting, failed); no star, no green "Connected" chip under a heading that says it.

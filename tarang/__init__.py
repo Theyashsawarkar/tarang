@@ -163,6 +163,41 @@ def why(text, code):
     return (last[-1].removeprefix("Error: ") if last else f"nmcli failed (exit {code}).")
 
 
+def retry_worth(text, code):
+    """Whether a failed connect is worth a second try (see connect_worker)."""
+    w = why(text, code)
+    if w.startswith(("Wrong password", "That can't be the password", "Out of range", "This network asks",
+                     "NetworkManager didn't allow")):
+        return False
+    low = (text or "").lower()
+    return code == 124 or w.startswith(("No answer", "The Wi-Fi card isn't ready", "Joined, but")) or any(
+        k in low for k in ("activation failed", "interrupted", "disconnected", "supplicant", "timeout"))
+
+
+def device_state(dev=None):
+    """NetworkManager's word for the Wi-Fi device ("connected",
+    "unavailable"...): `dev`, or the first Wi-Fi device."""
+    for line in util.run(["nmcli", "-t", "-f", "DEVICE,TYPE,STATE", "device"], timeout=4)[1].splitlines():
+        name, kind, state = (line.split(":") + ["", ""])[:3]
+        if (name == dev) if dev else (kind == "wifi"):
+            return state
+    return ""
+
+
+def restart_radio():
+    """Turns the Wi-Fi radio off and on: wakes a card stuck "unavailable"
+    (after sleep, mostly) without a reboot. NetworkManager lets the seat's
+    user do it; saved networks reconnect by themselves."""
+    util.run(["nmcli", "radio", "wifi", "off"], timeout=10)
+    time.sleep(2)
+    util.run(["nmcli", "radio", "wifi", "on"], timeout=10)
+    for _ in range(15):
+        time.sleep(0.6)
+        if device_state() not in ("unavailable", ""):
+            return True
+    return False
+
+
 def qr_png(payload):
     """A QR code PNG for `payload` (cached by its hash), or None without qrencode."""
     if not util.have("qrencode"):
@@ -215,6 +250,7 @@ class Plugin(Base):
         self.show_pw = False        # Ctrl+S: passwords in clear
         self.scan_asked = 0         # when we last asked NetworkManager to rescan
         self.conn = None            # {"ssid", "step", "state": now/done/failed, "why"} while/after connecting
+        self.resetting = False
         self.sharing = None         # {"ssid", "password", "qr", "error", "loading"} after Ctrl+Q
         self.hs_busy = ""           # "starting" / "stopping" / "saving" the hotspot
         self.hs_error = ""
@@ -366,6 +402,21 @@ class Plugin(Base):
         self.sync_switch()
         self.refresh()
 
+    def reset_radio(self):
+        if self.resetting:
+            return
+        self.resetting = True
+        self.set_status("resetting Wi-Fi…")
+
+        def done(ok):
+            self.resetting = False
+            if ok is True:
+                self.set_status("")
+            else:
+                self.set_status("Wi-Fi still isn't answering: a reboot may be needed", "bad")
+            self.refresh()
+        self.background(restart_radio, done)
+
     def set_radio(self, on):
         self.background(lambda: util.run(["nmcli", "radio", "wifi", "on" if on else "off"]),
                         lambda _r: (self.rescan() if on else None, self.refresh()))
@@ -428,6 +479,9 @@ class Plugin(Base):
         radio = util.run("nmcli radio wifi")[1] == "enabled"
         snap = {"radio": radio, "dev": dev, "wired": wired, "nets": [], "active": None, "ip": ""}
         if not radio:
+            return snap
+        if device_state(dev) == "unavailable":     # on, but the card isn't answering
+            snap["stuck"] = True
             return snap
         if time.time() - self.scan_asked > 15 and not (self.conn and self.conn["state"] == "now"):
             self.rescan(refresh=False)
@@ -542,6 +596,15 @@ class Plugin(Base):
                                                      ui.chip("Unavailable", "red", ALERT), spacing=8),
                                              ui.label(s["error"], "hero-sub", xalign=0, wrap=True), spacing=6)),
                            color="red")
+        if s.get("stuck"):
+            return ui.hero(ui.ring(0, "yellow", 64, 6, ui.label(WIFI_OFF, "glyph", "tarang-ring-glyph", "t-yellow")),
+                           self.grow(ui.vbox(ui.hbox(ui.label("Wi-Fi isn't answering", "hero-title"),
+                                                     ui.chip("Stuck", "yellow", ALERT), spacing=8),
+                                             ui.label("The card stopped responding (mostly after sleep). Reset turns "
+                                                      "its radio off and on; saved networks join again by themselves.",
+                                                      "hero-sub", xalign=0, wrap=True), spacing=6)),
+                           ui.button("Reset Wi-Fi", self.reset_radio, "primary", WIFI, "Enter"),
+                           color="yellow")
         if s.get("radio") is False:
             sub = (f"You're on Ethernet ({s['wired']}). " if s.get("wired") else "") + \
                   "Turn it on to see the networks around you."
@@ -1091,7 +1154,21 @@ class Plugin(Base):
         threading.Thread(target=self.connect_worker, args=(cmds, dev, self.conn), daemon=True).start()
 
     def connect_worker(self, cmds, dev, conn):
-        """Runs nmcli and watches the device's state for the steps."""
+        """Runs nmcli (watching the device's state for the steps), and tries
+        again when the failure is one a second try fixes: no answer in time,
+        the card not ready (it gets its radio restarted first), DHCP, a link
+        that dropped half-way. A wrong password or a network out of sight is
+        said at once."""
+        for attempt in range(3):
+            code, err = self.connect_once(cmds, dev, conn)
+            if code == 0 or not retry_worth(err, code) or attempt == 2:
+                break
+            if dev and device_state(dev) == "unavailable":
+                restart_radio()
+            time.sleep(1.5 * (attempt + 1))
+        GLib.idle_add(self.connect_done, conn, code, err)
+
+    def connect_once(self, cmds, dev, conn):
         code, err = 0, ""
         for cmd in cmds:
             try:
@@ -1119,7 +1196,7 @@ class Plugin(Base):
             err = (e or "") + ("\n" + out if code and out else "")
             if code:
                 break
-        GLib.idle_add(self.connect_done, conn, code, err)
+        return code, err
 
     def set_step(self, conn, step):
         if conn is self.conn and conn["state"] == "now":
@@ -1344,6 +1421,9 @@ class Plugin(Base):
         return False
 
     def key(self, name, row, mods):
+        if name in ("Return", "KP_Enter") and self.snap.get("stuck") and not (self.asking or self.editing):
+            self.reset_radio()
+            return True
         if name == "Escape":
             if self.asking or self.editing:
                 self.cancel_entry()
