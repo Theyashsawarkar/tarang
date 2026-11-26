@@ -30,10 +30,10 @@
 </p>
 
 <p align="center">
-  <img alt="tarang: on the left the network you're on as a card (signal ring, live download and upload, Share and Disconnect) over the list (connected, saved, nearby); on the right its live view: download and upload speeds with peak and average, the last minute as a graph, data received and sent, the signal with its own line, and internet state, security, band, IP, router, link rate, DNS, access point and IPv6" src="assets/screenshots/tarang.png" width="100%">
+  <img alt="tarang: the network you're on first in the list, then saved and nearby networks with signal bars; on the right its name with a signal ring, Online for 1 h 24 min, Share and Disconnect, live download and upload over the last minute, data received and sent, then signal, security, band, link rate, IP, router and DNS" src="assets/screenshots/tarang.webp" width="100%">
 </p>
 <p align="center">
-  <img alt="tarang's Hotspot tab: a QR code to join, the name, hidden password, band and what it shares; the connected devices; the settings, read-only until Enter; on the right the hotspot's live traffic (from and to its devices) over the last minute" src="assets/screenshots/tarang-hotspot.png" width="100%">
+  <img alt="tarang's Hotspot tab: a QR code to join, the name, hidden password, band and what it shares; the connected devices; the settings, read-only until Enter; on the right the hotspot's live traffic (from and to its devices) over the last minute" src="assets/screenshots/tarang-hotspot.webp" width="100%">
 </p>
 <p align="center"><sub>Screenshots use made-up demo networks.</sub></p>
 
