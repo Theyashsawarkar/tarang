@@ -4,8 +4,9 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+- The network's view shows just its Wi-Fi icon beside the name (coloured by signal, its percentage in the details), no ring around it.
 - New screenshots in the Spatial look, taken with made-up demo data (WebP, sharp on high-density screens).
-- **A calmer Wi-Fi panel.** The network you're on is no longer said twice (a card above the list and a row in it): it's the list's first row, and the right side is its live view: its name with the signal ring, Online and how long, Share and Disconnect, the speeds and the minute's graph in one card with what was received and sent, then the details (signal, security, band, link rate, addresses) as one quiet list instead of twelve tiles. Other networks show the same way. Rows keep chips only where they mean something (Open, weak security, connecting, failed); no star, no green "Connected" chip under a heading that says it.
+- **A calmer Wi-Fi panel.** The network you're on is no longer said twice (a card above the list and a row in it): it's the list's first row, and the right side is its live view: its name with its Wi-Fi icon, Online and how long, Share and Disconnect, the speeds and the minute's graph in one card with what was received and sent, then the details (signal, security, band, link rate, addresses) as one quiet list instead of twelve tiles. Other networks show the same way. Rows keep chips only where they mean something (Open, weak security, connecting, failed); no star, no green "Connected" chip under a heading that says it.
 - The website, closer to Vayu's own: the tool's screenshot blurred behind the page, a centred hero with the logo and the verse, the page you're on as the white pill, glass "On this page" and footer panels, releases as cards. No glow behind the logo, no coloured line beside the verse.
 - **Spatial look**: rounder, borderless glass cards for the live view.
 - The website has Vayu's Spatial look: graphite glass, a floating navigation bar, near-white for links and the main button, and the tool's own colour only as its signature (the logo's glow, the shloka's line, the release dots). No more all-caps labels.

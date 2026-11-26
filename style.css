@@ -1,5 +1,6 @@
 /* tarang */
 .tarang-ring-glyph { font-size: 24px; }
+.tarang-head-glyph { font-size: 30px; min-width: 40px; }
 .tarang-switch-label { color: @subtext0; font-size: 12.5px; font-weight: 600; }
 .tarang-mono { font-family: "JetBrainsMono Nerd Font"; }
 /* a QR code needs a light quiet zone to scan, whatever the theme */
@@ -48,7 +49,7 @@ button.tarang-onoff.on .tarang-knob { background: @green; }
 .tarang-since-at { color: @overlay1; font-size: 11.5px; }
 .tarang-pill { color: alpha(@crust, 0.82); }
 
-/* Spatial (2026-11-26): the network as a title with its signal ring; the live
+/* Spatial (2026-11-26): the network as a title beside its Wi-Fi icon (no ring); the live
    speeds and the graph in one glass card; the details as one quiet list. */
 .tarang-title { font-size: 19px; font-weight: 700; color: @text; }
 .tarang-live-card, .tarang-facts { padding: 14px 16px; border-radius: 22px; background: alpha(white, 0.05);

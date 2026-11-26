@@ -1,6 +1,6 @@
 """tarang (तरंग, "wave"): Wi-Fi for Vyom, through NetworkManager.
 
-The network you're on is a card at the top (signal ring, band, its live
+The network you're on is a card at the top (Wi-Fi icon, band, its live
 download and upload; Share and Disconnect) and the list's first row; picked,
 the right side shows it live (live.py: speeds, the minute's graph, totals,
 signal, addresses). Below it the saved networks, then the nearby ones,
@@ -909,7 +909,7 @@ class Plugin(Base):
         return ui.vbox(g, cls="tarang-facts")
 
     def head(self, ssid, ring, meta):
-        """The network's name, a signal ring and a line under it."""
+        """The network's name beside its Wi-Fi icon (coloured by signal), a line under it."""
         text = ui.vbox(ui.label(ssid, "tarang-title", xalign=0, ellipsize=Pango.EllipsizeMode.END), meta, spacing=4)
         text.set_valign(Gtk.Align.CENTER)
         text.set_hexpand(True)
@@ -923,7 +923,7 @@ class Plugin(Base):
         sname, scolor, sword, skind = security(a["security"])
         since = s.get("since")
         internet = INTERNET.get(s.get("internet") or "unknown", INTERNET["unknown"])
-        ring = ui.ring(int(a["signal"] or 0) / 100, lcolor, 54, 5, ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}"))
+        ring = ui.label(WIFI, "glyph", "tarang-head-glyph", f"t-{lcolor}")
         ring.set_tooltip_text(note)
         meta = ui.hbox(ui.chip(internet[0], internet[1], internet[2]), spacing=8)
         self.live_w = {}
@@ -1009,7 +1009,8 @@ class Plugin(Base):
         sname, scolor, sword, skind = security(d["security"])
         state = ("Saved" + (f" · {ago(d['ts'])}" if ago(d["ts"]) else "")) if d["saved"] \
             else "New: you haven't joined it"
-        ring = ui.ring(int(d["signal"] or 0) / 100, lcolor, 54, 5, ui.label(WIFI, "glyph", "tarang-ring-glyph", f"t-{lcolor}"))
+        ring = ui.label(WIFI, "glyph", "tarang-head-glyph", f"t-{lcolor}")
+        ring.set_tooltip_text(note)
         parts = [self.head(d["ssid"], ring, ui.label(state, "tarang-since-at", xalign=0))]
         # the signal, and how it compares with the network you're on
         cur = self.snap.get("active")
