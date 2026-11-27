@@ -10,16 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      # The tests import the plugin, so they need PyGObject with GTK 4, cairo and
+      # gtk4-layer-shell (the system Python's, from apt) and Vyom on the path.
+      - name: PyGObject, GTK 4 and Vyom
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends python3-gi python3-gi-cairo gir1.2-gtk-4.0 gir1.2-gtk4layershell-1.0
+          git clone --depth 1 https://github.com/Theyashsawarkar/vyom /tmp/vyom
       - name: Compile
-        run: python -m compileall -q tarang
+        run: python3 -m compileall -q tarang
       - name: Unit tests
-        run: python -m unittest discover -s tests
+        run: PYTHONPATH=/tmp/vyom python3 -m unittest discover -s tests
       - name: plugin.toml
         run: |
-          python - <<'EOF'
+          python3 - <<'EOF'
           import tomllib
           m = tomllib.load(open("plugin.toml", "rb"))
           for key in ("name", "title", "version", "vyom", "icon", "color", "description"):
@@ -29,7 +33,7 @@ jobs:
           EOF
       - name: Every key is documented
         run: |
-          python - <<'EOF'
+          python3 - <<'EOF'
           import pathlib, re
           readme = pathlib.Path("README.md").read_text()
           missing = []
@@ -42,7 +46,6 @@ jobs:
           EOF
       - name: Keys match the keymap
         run: |
-          git clone --depth 1 https://github.com/Theyashsawarkar/vyom /tmp/vyom
           VYOM_CORE=/tmp/vyom python3 scripts/keybinds.py --check
       - name: Website is up to date
         run: python3 scripts/build-site.py --check
