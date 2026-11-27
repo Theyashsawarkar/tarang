@@ -266,7 +266,8 @@ class Plugin(Base):
         self.ssid_cache = {}        # connection uuid -> (ssid, metered)
         self.switch = self.switch_label = self.scan_chip = None
         self.tick_id = None
-        self.traffic = live.Traffic()   # the last minute of speeds (read while the panel is open)
+        self.traffic = live.Traffic()   # the last minute of speeds (Vyom's, or read while the panel is open)
+        self.net_watch = None       # Vyom's net history, followed while the panel shows
         self.strip_rate = None      # the card's live ↓ ↑ line
         self.live_w = None          # the dashboard's moving parts: {"rx", "tx", "graph", …}
         self.since = {}             # (dev, ssid) -> when it connected (NetworkManager's log)
@@ -345,7 +346,8 @@ class Plugin(Base):
             self.tick_id = None
             return False
         self.update_scan_chip()
-        self.sample_traffic()
+        if self.net_watch is None:      # else Vyom's readings move the graph (net_reading)
+            self.sample_traffic()
         return True
 
     def traffic_dev(self):
@@ -357,12 +359,25 @@ class Plugin(Base):
         return self.snap.get("dev") if self.snap.get("active") else None
 
     def sample_traffic(self):
+        """The speeds: from Vyom's net history while it keeps one (the whole
+        minute, at once), else one sample here. True when they were shown."""
         dev = self.traffic_dev()
         if not dev:
-            return
+            return False
+        if self.net_watch is not None:
+            h = state.history("net", dev=dev, step=1, window=live.WINDOW)
+            if h is not None:
+                self.traffic.load(h, dev)
+                self.update_live()
+                return True
         a = self.snap.get("active") or {}
         self.traffic.sample(dev, fallback_signal=a.get("signal") or None)
         self.update_live()
+        return True
+
+    def net_reading(self, _none=None):
+        if self.panel is not None and self.panel.get_visible():
+            self.sample_traffic()
 
     def update_live(self):
         t = self.traffic
@@ -441,6 +456,10 @@ class Plugin(Base):
         if self.tick_id is None:
             self.tick_id = GLib.timeout_add_seconds(1, self.tick)
         self.traffic.reset()
+        # Vyom (0.10) keeps the last minute of speeds all along: the graph
+        # opens on it, and Vyom reads by the second while the panel shows
+        if state is not None and hasattr(state, "history") and self.net_watch is None:
+            self.net_watch = state.watch("net", self.net_reading, fast=True)
 
     # ------------------------------------------------------------ data
     def search(self, q):
@@ -933,7 +952,8 @@ class Plugin(Base):
             import logging
             logging.getLogger("vyom.tarang").exception("preview")
             return None
-        self.update_live()
+        if not (self.net_watch is not None and self.sample_traffic()):
+            self.update_live()
         return w
 
     def preview_for(self, d):
@@ -1606,6 +1626,9 @@ class Plugin(Base):
         if state is not None and getattr(self, "watch_h", None) is not None:
             state.unwatch(self.watch_h)
             self.watch_h = None
+        if self.net_watch is not None:
+            state.unwatch(self.net_watch)
+            self.net_watch = None
         self.cancel_entry()
         self.sharing = None
         self.show_pw = False

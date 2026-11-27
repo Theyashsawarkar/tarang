@@ -2,6 +2,10 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
+## Unreleased
+
+- **The speed graph opens on the whole last minute** instead of starting from nothing: with Vyom 0.10 the speeds come from Vyom's live state, which reads the card's counters all along (every 2 s, every second while this panel shows); tarang no longer samples them itself. With an older Vyom it samples while the panel is open, as before.
+
 ## v0.6.0 -- 2026-11-27
 
 - **The list is there when the panel opens**: networks, the one you're on, its addresses and saved networks come from Vyom's live state (NetworkManager's own signals keep it current), not a dozen nmcli runs (0.2-0.5 s) before the list filled; a rescan is a D-Bus request and its results arrive by themselves while the panel shows (no refresh 4 s later). With an older Vyom it asks nmcli, as before.

@@ -1,5 +1,7 @@
 """How fast the Wi-Fi card moves data: its byte counters, read once a second,
-and the last minute kept. No GTK here (the unit tests run without it).
+and the last minute kept. With Vyom 0.10 Vyom keeps that minute itself
+(live.history("net"), read since it started) and Traffic.load() takes it;
+sample() is for an older Vyom. No GTK here (the unit tests run without it).
 
 Nothing here makes network traffic: it reads the card's own counters
 (/sys/class/net/<dev>/statistics) and signal level (/proc/net/wireless).
@@ -143,6 +145,25 @@ class Traffic:
         elif fallback_signal is not None:
             self.sig.append(int(fallback_signal))
         return True
+
+    def load(self, hist, dev):
+        """Takes the minute from Vyom's live state (Vyom 0.10's net history:
+        {"rx": [...], "tx": [...], "totals": (rx, tx)}, one value a second,
+        kept since Vyom started), so the graph opens full; the signal is
+        read here (one small file)."""
+        if dev != self.dev:
+            self.reset(dev)
+        self.rx.clear()
+        self.rx.extend(hist.get("rx") or ())
+        self.tx.clear()
+        self.tx.extend(hist.get("tx") or ())
+        if hist.get("totals"):
+            self.totals = tuple(hist["totals"])
+        self.last = None            # sample() starts over if it's ever used again
+        lv = wireless_level(dev)
+        if lv:
+            self.sig.append(lv[0])
+            self.dbm = lv[1]
 
     def now(self):
         return (self.rx[-1] if self.rx else 0.0), (self.tx[-1] if self.tx else 0.0)

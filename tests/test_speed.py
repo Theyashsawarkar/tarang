@@ -101,5 +101,19 @@ class Sampler(unittest.TestCase):
         self.assertEqual(t.now(), (0, 0))
 
 
+class FromVyom(unittest.TestCase):
+    def test_load_takes_the_minute_vyom_kept(self):
+        t = speed.Traffic()
+        with mock.patch.object(speed, "wireless_level", return_value=(80, -52)):
+            t.load({"rx": [float(i) for i in range(90)], "tx": [2.0] * 90, "totals": (1000, 200)}, "demo0")
+        self.assertEqual(len(t.rx), speed.WINDOW)
+        self.assertEqual(t.now(), (89.0, 2.0))
+        self.assertEqual(t.totals, (1000, 200))
+        self.assertEqual(t.dbm, -52)
+        with mock.patch.object(speed, "wireless_level", return_value=None):
+            t.load({"rx": [], "tx": [], "totals": None}, "demo1")   # another device: starts empty
+        self.assertEqual(t.now(), (0.0, 0.0))
+
+
 if __name__ == "__main__":
     unittest.main()
