@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.7.0 -- 2026-11-27
 
 - **The speed graph opens on the whole last minute** instead of starting from nothing: with Vyom 0.10 the speeds come from Vyom's live state, which reads the card's counters all along (every 2 s, every second while this panel shows); tarang no longer samples them itself. With an older Vyom it samples while the panel is open, as before.
 
