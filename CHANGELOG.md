@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.6.0 -- 2026-11-27
 
 - **The list is there when the panel opens**: networks, the one you're on, its addresses and saved networks come from Vyom's live state (NetworkManager's own signals keep it current), not a dozen nmcli runs (0.2-0.5 s) before the list filled; a rescan is a D-Bus request and its results arrive by themselves while the panel shows (no refresh 4 s later). With an older Vyom it asks nmcli, as before.
 - **Works every time, no reboot.** Joining a network tries again (up to three times) when the failure is one a second try fixes: no answer in time, the card not ready (its radio is restarted first), DHCP, a link that dropped half-way; a wrong password or a network out of sight is said at once. A card stuck "unavailable" (mostly after sleep) shows "Wi-Fi isn't answering" with **Reset Wi-Fi** (`Enter`), which turns the radio off and on; saved networks join again by themselves.
