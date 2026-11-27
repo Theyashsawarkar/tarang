@@ -21,9 +21,15 @@ import time
 from gi.repository import GLib, Gtk, Pango
 
 from vyom import Hint, Row, Section, ui, util
+
 from vyom import Plugin as Base
 
 from . import live, vim
+
+try:            # Vyom 0.9's live state: NetworkManager as its own signals keep it (no nmcli on the way)
+    from vyom import live as state
+except ImportError:
+    state = None
 
 # KEYBINDS (generated from tarang/vim.py by scripts/keybinds.py; don't edit by hand)
 # keybind: Vyom/wifi:normal | Enter | Connect to the selected network (asks for its password if needed)
@@ -423,6 +429,9 @@ class Plugin(Base):
 
     def opened(self, args):
         super().opened(args)
+        # NetworkManager's own signals refresh the list while it shows
+        if state is not None and getattr(self, "watch_h", None) is None:
+            self.watch_h = state.watch("wifi", self.live_changed)
         self.cancel_entry()
         self.sharing = None
         if self.conn and self.conn["state"] != "now":
@@ -466,7 +475,64 @@ class Plugin(Base):
         return rows
 
     def collect(self):
-        """Everything the networks tab shows, read in the worker thread."""
+        """Everything the networks tab shows, read in the worker thread:
+        from Vyom's live state when it has NetworkManager (memory, at
+        once), else from nmcli (a dozen commands, 0.2-0.5 s)."""
+        snap = self.collect_live()
+        if snap is not None:
+            return snap
+        return self.collect_nmcli()
+
+    def collect_live(self):
+        ls = state.get("wifi") if state is not None else None
+        if not ls or not ls.get("running") or not ls.get("device"):
+            return None   # nmcli says what's wrong in words
+        dev = ls["device"]
+        snap = {"radio": ls["enabled"], "dev": dev, "wired": ls.get("wired", ""), "nets": [], "active": None,
+                "ip": ""}
+        if not snap["radio"]:
+            return snap
+        if ls.get("state") == "unavailable":
+            snap["stuck"] = True
+            return snap
+        if time.time() - self.scan_asked > 15 and not (self.conn and self.conn["state"] == "now"):
+            self.rescan(refresh=False)
+        saved = {}
+        for c in ls.get("saved", []):
+            if c.get("mode") == "ap" or c.get("name") == "Vayu Hotspot" or not c.get("ssid"):
+                continue
+            saved[c["ssid"]] = {"uuid": c["uuid"], "name": c["name"], "ts": str(c.get("timestamp") or 0),
+                                "metered": c.get("metered", "")}
+        nets = {}
+        for a in ls.get("aps", []):
+            ssid = a["ssid"]
+            if not ssid:
+                continue
+            n = nets.get(ssid)
+            if n is None or a["strength"] > int(n["signal"] or 0) or a["active"]:
+                conn = saved.get(ssid) or {}
+                nets[ssid] = {"ssid": ssid, "security": a["security"], "signal": str(a["strength"]),
+                              "freq": f"{a['freq']} MHz", "chan": str(a["channel"]), "bssid": a["bssid"],
+                              "rate": f"{a['max_bitrate']} Mbit/s",
+                              "active": a["active"] or (n or {}).get("active", False),
+                              "saved": bool(conn), "conn": conn.get("uuid"), "conn_name": conn.get("name"),
+                              "ts": conn.get("ts", 0), "metered": conn.get("metered", "")}
+        snap["nets"] = sorted(nets.values(), key=lambda n: -int(n["signal"] or 0))
+        snap["active"] = next((n for n in snap["nets"] if n["active"]), None)
+        if snap["active"]:
+            ip6 = [x.split("/")[0] for x in ls.get("ip6", [])]
+            ip6 = [x for x in ip6 if not x.lower().startswith("fe80")] or ip6
+            snap.update({"ip": (ls.get("ip4") or [""])[0].split("/")[0], "gateway": ls.get("gateway", ""),
+                         "dns": ", ".join(ls.get("dns", [])), "ip6": ip6[0] if ip6 else "",
+                         "mac": ls.get("mac", ""), "internet": ls.get("connectivity", "unknown"),
+                         "link": live.link_info(dev)})
+            key = (dev, snap["active"]["ssid"], snap["active"].get("bssid"))
+            if key not in self.since:
+                self.since = {key: live.connected_since(dev)}
+            snap["since"] = self.since[key]
+        return snap
+
+    def collect_nmcli(self):
         code, out = util.run("nmcli -t -f RUNNING general")
         if code == 127 and not util.have("nmcli"):
             return {"error": "nmcli isn't installed: tarang needs NetworkManager", "radio": None}
@@ -528,9 +594,10 @@ class Plugin(Base):
 
     def rescan(self, refresh=True):
         self.scan_asked = time.time()
-        util.spawn(["nmcli", "device", "wifi", "rescan"])
+        if not (state is not None and getattr(state, "wifi_rescan", None) and state.wifi_rescan()):
+            util.spawn(["nmcli", "device", "wifi", "rescan"])
         GLib.idle_add(self.update_scan_chip)
-        if refresh:   # NetworkManager takes a few seconds to scan
+        if refresh and state is None:   # NetworkManager takes a few seconds to scan (the live state hears it)
             GLib.timeout_add_seconds(4, lambda: (self.refresh(), False)[1])
 
     def net_row(self, n):
@@ -1518,7 +1585,27 @@ class Plugin(Base):
         util.copy(text)
         self.set_status("copied the name" if what == "ssid" else "copied the password", "ok")
 
+    def live_changed(self, _snap):
+        """A change (a scan's signal levels come in bursts): one refresh
+        now, then at most one a second while changes keep coming."""
+        if getattr(self, "live_gate", None):
+            self.live_again = True
+            return
+        if self.panel is not None and self.panel.get_visible() and self.tab == "networks" and not self.editing:
+            self.refresh()
+        self.live_again = False
+
+        def reopen():
+            self.live_gate = None
+            if self.live_again:
+                self.live_changed(None)
+            return False
+        self.live_gate = GLib.timeout_add(1000, reopen)
+
     def closed(self):
+        if state is not None and getattr(self, "watch_h", None) is not None:
+            state.unwatch(self.watch_h)
+            self.watch_h = None
         self.cancel_entry()
         self.sharing = None
         self.show_pw = False
