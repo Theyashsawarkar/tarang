@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.9.0 -- 2026-11-28
 
 - **Left open on another workspace, it comes back as you left it** (Vyom 0.13, ADR 17): Vyom hides the panel when you leave its workspace, or when another panel takes the centre, and shows it again unchanged. While it's hidden Vyom's by-the-second speed readings stop; when it shows again the graph has the whole last minute at once and the scan chip's clock runs again (`parked()` / `unparked()`). With an older Vyom nothing changes.
 
