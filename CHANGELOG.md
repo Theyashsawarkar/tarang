@@ -2,7 +2,7 @@
 
 Newest first. Releases are tags (`vX.Y.Z`).
 
-## Unreleased
+## v0.8.0 -- 2026-11-28
 
 - **Every connection looks like Wi-Fi does** (needs Vyom 0.12 for all of it): Ethernet, a phone over USB (RNDIS, NCM, iPhone), mobile broadband, Bluetooth and a VPN or WireGuard each get a row under **Connected** (the one carrying your traffic first, a VPN right under the connection it rides on) and, picked, the same live view as a Wi-Fi network: the kind's icon with no ring, its name, a badge (Ethernet, USB, Mobile, VPN…), Online or Standby, live download and upload, the minute's graph (opens full, from Vyom's history of that device), totals, and the details by kind: link speed and duplex for a cable, operator and APN for a modem, the server and what it rides on for a VPN, addresses, router, DNS, route, device and hardware address. On Ethernet the big card with a green ring around the cable and a sentence is gone.
 - The header reads **Network** with the main connection's icon once anything but Wi-Fi is up (a cable, a phone, a VPN); "Wi-Fi" with Wi-Fi alone. The Wi-Fi networks list below is the same.
