@@ -1844,6 +1844,24 @@ class Plugin(Base):
             return False
         self.live_gate = GLib.timeout_add(1000, reopen)
 
+    def parked(self):
+        """Vyom 0.13 (ADR 17): the panel hid but stays open (you left its
+        workspace, or a panel took its place). Vyom's by-the-second
+        readings stop with it; everything you see stays as it is."""
+        if state is not None and self.net_watch is not None:
+            state.unwatch(self.net_watch)
+            self.net_watch = None
+
+    def unparked(self):
+        """It shows again as you left it: the graph's last minute at once,
+        its readings by the second, the scan chip's clock."""
+        if state is not None and hasattr(state, "history") and self.net_watch is None:
+            self.net_watch = state.watch("net", self.net_reading, fast=True)
+        if self.tick_id is None:
+            self.tick_id = GLib.timeout_add_seconds(1, self.tick)
+        self.sample_traffic()
+        self.update_scan_chip()
+
     def closed(self):
         if state is not None and getattr(self, "watch_h", None) is not None:
             state.unwatch(self.watch_h)
