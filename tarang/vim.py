@@ -46,7 +46,7 @@ COMMON = [
 LEADER = [
     B(" pp", "radio", "Toggle Wi-Fi on or off"),
     B(" ph", "hotspot", "Toggle the hotspot on or off"),
-    B(" cd", "disconnect", "Disconnect from the current network", when=NETS),
+    B(" cd", "disconnect", "Disconnect the selected connection (Wi-Fi, a cable, a phone, a VPN)", when=NETS),
     B(" cq", "share", "Show the current network as a QR code (to share it)", when=NETS),
     B(" us", "showpw", "Toggle the passwords (show or hide them)"),
     B(" yp", "copy:password", "Copy the network's password (the hotspot's on its tab)"),

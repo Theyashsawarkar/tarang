@@ -54,7 +54,7 @@ tarang is wi‑Fi and the hotspot for [Vyom](https://github.com/Theyashsawarkar/
 
 ## Features
 
-- **The network you're on, at a glance**: a card at the top with a signal ring, band and channel, your download and upload right now, and its **Share** (`Space c q`) and **Disconnect** (`Space c d`) buttons. It's also the first row of the list, under **Connected**. Not connected, the card says why: Wi‑Fi off, on Ethernet, NetworkManager not running, no Wi‑Fi card.
+- **Every connection you're on, at the top**: Wi‑Fi, Ethernet, a phone over USB, mobile broadband, Bluetooth, a VPN or WireGuard, each a row under **Connected** (the one carrying your traffic first, a VPN under the connection it rides on), each the same way: its kind's icon, name and badge. Picked, the right side shows it live, like a Wi‑Fi network: Online or Standby, speeds, the minute's graph, totals, and its details (link speed and duplex for a cable, operator and APN for a modem, server and what it rides on for a VPN). On anything but Wi‑Fi the header says **Network**. Not connected, a card says why: Wi‑Fi off, NetworkManager not running, no Wi‑Fi card. `Space c d` disconnects the selected connection.
 - **Live speeds on the right**: with the network you're on picked (it is when the panel opens), the right side shows download and upload as big numbers with their peak and average, **the last minute as a graph** (peaks marked), data received and sent, how long you've been connected (and since when), the signal with its own line and dBm, and every fact in one place: internet (Online, Limited, Sign in, No internet), security, band and channel, IP address, router, link rate (both ways, from `iw` when it's there), DNS, access point and IPv6. The graph opens on the whole last minute (Vyom 0.10 keeps it all along: its live state reads the counters every 2 s, every second while this panel is open) and moves once a second. Only the card's own byte counters (`/sys/class/net`) and signal (`/proc/net/wireless`) are read, so it never sends anything to measure (no speed test, no ping).
 - **Signal as bars and a word** (Excellent, Good, Fair, Weak in green, green, yellow, red), saved networks starred, then nearby ones, strongest first. Open networks get a yellow **Open** chip, WEP/WPA1 a red one. Scanning shows in the top bar ("Scanning…", then "Scanned 8 s ago"); `r` rescans.
 - `Enter` connects; a secured network you haven't joined asks for its **password right in the search box** (hidden; `Ctrl+S` shows it), and nothing is sent until you press `Enter`.
@@ -132,7 +132,7 @@ Vyom's vim keys work too: `?` and `Space ?` list every key, `Space Space` is the
 |---|---|
 | `Space p p` | Toggle Wi-Fi on or off |
 | `Space p h` | Toggle the hotspot on or off |
-| `Space c d` | Disconnect from the current network |
+| `Space c d` | Disconnect the selected connection (Wi-Fi, a cable, a phone, a VPN) |
 | `Space c q` | Show the current network as a QR code (to share it) |
 | `Space u s` | Toggle the passwords (show or hide them) |
 | `Space y p` | Copy the network's password (the hotspot's on its tab) |

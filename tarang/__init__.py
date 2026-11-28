@@ -1,9 +1,10 @@
-"""tarang (तरंग, "wave"): Wi-Fi for Vyom, through NetworkManager.
+"""tarang (तरंग, "wave"): the network panel for Vyom, through NetworkManager.
 
-The network you're on is a card at the top (Wi-Fi icon, band, its live
-download and upload; Share and Disconnect) and the list's first row; picked,
-the right side shows it live (live.py: speeds, the minute's graph, totals,
-signal, addresses). Below it the saved networks, then the nearby ones,
+Every connection you're on comes first, the one carrying your traffic at
+the top, each the same way whatever it runs over (Wi-Fi, Ethernet, a phone
+over USB, mobile broadband, Bluetooth, a VPN riding on one of them: links.py);
+picked, the right side shows it live (live.py: speeds, the minute's graph,
+totals, link speed or signal, addresses). Below it the saved networks, then the nearby ones,
 strongest first, each with signal bars and a word. Enter connects; a secured network you haven't joined asks
 for its password right in the search box, and connecting shows its steps
 (and why it failed, when it does). A Hotspot tab drives vayu-hotspot (or
@@ -24,7 +25,7 @@ from vyom import Hint, Row, Section, ui, util
 
 from vyom import Plugin as Base
 
-from . import live, vim
+from . import links, live, vim
 
 try:            # Vyom 0.9's live state: NetworkManager as its own signals keep it (no nmcli on the way)
     from vyom import live as state
@@ -40,7 +41,7 @@ except ImportError:
 # keybind: Vyom/wifi | Ctrl+s | Show or hide the password you type (works while typing)
 # keybind: Vyom/wifi leader:normal | Space p p | Toggle Wi-Fi on or off
 # keybind: Vyom/wifi leader:normal | Space p h | Toggle the hotspot on or off
-# keybind: Vyom/wifi leader:normal | Space c d | Disconnect from the current network
+# keybind: Vyom/wifi leader:normal | Space c d | Disconnect the selected connection (Wi-Fi, a cable, a phone, a VPN)
 # keybind: Vyom/wifi leader:normal | Space c q | Show the current network as a QR code (to share it)
 # keybind: Vyom/wifi leader:normal | Space u s | Toggle the passwords (show or hide them)
 # keybind: Vyom/wifi leader:normal | Space y p | Copy the network's password (the hotspot's on its tab)
@@ -271,6 +272,8 @@ class Plugin(Base):
         self.strip_rate = None      # the card's live ↓ ↑ line
         self.live_w = None          # the dashboard's moving parts: {"rx", "tx", "graph", …}
         self.since = {}             # (dev, ssid) -> when it connected (NetworkManager's log)
+        self.link_since = {}        # (dev, uuid) -> when it connected, asked after the first frame
+        self.view_dev = None        # the device the right side's graph draws
         self.hotspot = util.expand(self.conf.get("hotspot_command", "vayu-hotspot"))
         # Networks / Hotspot tabs (Ctrl+H/L, Ctrl+1/2: Vyom), when there's a hotspot command.
         self.tabs = [("networks", "Networks"), ("hotspot", "Hotspot")] if util.have(self.hotspot) else []
@@ -316,12 +319,26 @@ class Plugin(Base):
         else:
             on, what, tip = self.snap.get("radio") is True, "Wi-Fi", "Wi-Fi on/off (Space p p)"
         self.switch_label.set_label(what)
+        self.sync_mode(self.snap.get("conns"))
         self.switch.set_tooltip_text(tip)
         self.switch_on = on
         self.switch.get_child().get_last_child().set_label("On" if on else "Off")
         (self.switch.add_css_class if on else self.switch.remove_css_class)("on")
         self.update_scan_chip()
         return False
+
+    def sync_mode(self, conns):
+        """The header's pill: "Wi-Fi" while Wi-Fi is all there is, "Network"
+        with the main connection's glyph once anything else is (a cable, a
+        phone, a VPN). A Vyom before 0.12 keeps "Wi-Fi"."""
+        set_mode = getattr(self.panel, "set_mode", None) if self.panel is not None else None
+        if set_mode is None or conns is None:
+            return
+        other = [c for c in conns if c.get("type") != "wifi"]
+        if other:
+            set_mode(links.glyph(conns[0].get("type")), "Network")
+        else:
+            set_mode(WIFI, "Wi-Fi")
 
     def update_scan_chip(self):
         """Scanning (yellow, for a few seconds after a rescan) or how long ago."""
@@ -356,7 +373,12 @@ class Plugin(Base):
         if self.tab == "hotspot":
             st = self.hs or {}
             return (st.get("device") or self.snap.get("dev")) if st.get("on") else None
-        return self.snap.get("dev") if self.snap.get("active") else None
+        if self.view_dev:
+            return self.view_dev
+        if self.snap.get("active"):
+            return self.snap.get("dev")
+        conns = self.snap.get("conns") or []
+        return links.graph_device(conns[0]) if conns else None
 
     def sample_traffic(self):
         """The speeds: from Vyom's net history while it keeps one (the whole
@@ -371,7 +393,8 @@ class Plugin(Base):
                 self.update_live()
                 return True
         a = self.snap.get("active") or {}
-        self.traffic.sample(dev, fallback_signal=a.get("signal") or None)
+        wifi = dev == self.snap.get("dev")
+        self.traffic.sample(dev, fallback_signal=(a.get("signal") or None) if wifi else None)
         self.update_live()
         return True
 
@@ -455,6 +478,8 @@ class Plugin(Base):
             self.select_tab("hotspot" if args and args[0] == "hotspot" else "networks")
         if self.tick_id is None:
             self.tick_id = GLib.timeout_add_seconds(1, self.tick)
+        if state is not None:       # the pill says Network on a cable at once (a look at memory)
+            self.sync_mode(links.from_live(state.get("wifi")))
         self.traffic.reset()
         # Vyom (0.10) keeps the last minute of speeds all along: the graph
         # opens on it, and Vyom reads by the second while the panel shows
@@ -471,27 +496,65 @@ class Plugin(Base):
         if self.asking:
             n = self.asking
             return [Section("Join", "", "Enter connects · Esc cancels"), self.net_row(n)]
+        here = self.connected_rows(snap, q)
         if snap.get("error"):
             self.empty_text = snap["error"]
-            return []
+            if not here:
+                return []
+            return here + [Section("Wi-Fi", "", ""),
+                           Row(snap["error"], "Wi-Fi networks can't be listed here", icon=WIFI_OFF, color="gray",
+                               dim=True, data={"kind": "none"})]
         if not snap["radio"]:
             self.empty_text = "Wi-Fi is off: Space p p turns it on"
-            return [Row("Wi-Fi is off", "Enter or Space p p turns it on", icon=WIFI_OFF, color="gray",
-                        data={"kind": "off"})]
+            return here + [Row("Wi-Fi is off", "Enter or Space p p turns it on", icon=WIFI_OFF, color="gray",
+                               data={"kind": "off"})]
         self.empty_text = "No networks match" if q else "No networks found yet: r rescans"
-        saved, nearby, here = [], [], []
+        saved, nearby = [], []
         for n in snap["nets"]:
-            if q and util.fuzzy(q, n["ssid"]) is None:
+            if n["active"] or (q and util.fuzzy(q, n["ssid"]) is None):
                 continue
-            (here if n["active"] else saved if n["saved"] else nearby).append(self.net_row(n))
-        rows = []
-        if here:   # the network you're on first: its row opens the live view
-            rows += [Section("Connected", "", "")] + here
+            (saved if n["saved"] else nearby).append(self.net_row(n))
+        rows = list(here)   # what you're on first, the main one at the top: a row opens its live view
         if saved:
             rows += [Section("Saved", len(saved), "Enter connects")] + saved
         if nearby:
             rows += [Section("Nearby", len(nearby), "strongest first")] + nearby
         return rows
+
+    def connected_rows(self, snap, q):
+        """Every connection you're on, the one carrying your traffic first,
+        a VPN under the connection it rides on; Wi-Fi as its network's row
+        (signal bars), the rest by their kind (a cable, a phone, a modem)."""
+        rows, wifi_done = [], False
+        active = snap.get("active")
+        for c in snap.get("conns") or []:
+            if q and util.fuzzy(q, c.get("name") or "") is None and util.fuzzy(q, c.get("ssid") or "") is None:
+                continue
+            if c.get("type") == "wifi" and active and not wifi_done:
+                rows.append(self.net_row(active, link=c))
+                wifi_done = True
+            elif c.get("type") != "wifi" or not active:
+                rows.append(self.link_row(c))
+        if active and not wifi_done and not (q and util.fuzzy(q, active["ssid"]) is None):
+            rows.append(self.net_row(active))
+        if not rows:
+            return []
+        n = len(rows)
+        return [Section("Connected", n if n > 1 else "", "main one first" if n > 1 else "")] + rows
+
+    def link_row(self, c):
+        """A connection that isn't Wi-Fi: its kind's glyph, its name, a badge."""
+        return Row(c.get("name") or c.get("device") or "Connection", links.subtitle(c),
+                   icon=links.glyph(c.get("type")), color="green",
+                   chips=[(c.get("label") or links.label(c.get("type")), "gray")], data={"kind": "link", **c})
+
+    def net_devices(self, ls):
+        """An older Vyom's net history knows which devices are up (to find a cable's)."""
+        if ls.get("connections") is not None or not ls.get("wired") or state is None \
+                or not hasattr(state, "history"):
+            return ()
+        h = state.history("net")
+        return (h or {}).get("devices") or ()
 
     def collect(self):
         """Everything the networks tab shows, read in the worker thread:
@@ -504,11 +567,17 @@ class Plugin(Base):
 
     def collect_live(self):
         ls = state.get("wifi") if state is not None else None
-        if not ls or not ls.get("running") or not ls.get("device"):
+        if not ls or not ls.get("running"):
             return None   # nmcli says what's wrong in words
+        conns = links.from_live(ls, self.net_devices(ls), ls.get("device"))
+        if not ls.get("device"):
+            if not conns:
+                return None
+            return {"error": "No Wi-Fi card found", "radio": None, "wired": ls.get("wired", ""), "conns": conns,
+                    "internet": ls.get("connectivity", "unknown")}
         dev = ls["device"]
         snap = {"radio": ls["enabled"], "dev": dev, "wired": ls.get("wired", ""), "nets": [], "active": None,
-                "ip": ""}
+                "ip": "", "conns": conns, "internet": ls.get("connectivity", "unknown")}
         if not snap["radio"]:
             return snap
         if ls.get("state") == "unavailable":
@@ -558,11 +627,12 @@ class Plugin(Base):
         if out.strip() != "running":
             return {"error": "NetworkManager isn't running (systemctl start NetworkManager)", "radio": None}
         dev = self.wifi_device()
-        wired = self.wired()
+        conns = self.conns_nmcli()
+        wired = next((c["name"] for c in conns if c["type"] == "ethernet"), "")
         if dev is None:
-            return {"error": "No Wi-Fi card found", "radio": None, "wired": wired}
+            return {"error": "No Wi-Fi card found", "radio": None, "wired": wired, "conns": conns}
         radio = util.run("nmcli radio wifi")[1] == "enabled"
-        snap = {"radio": radio, "dev": dev, "wired": wired, "nets": [], "active": None, "ip": ""}
+        snap = {"radio": radio, "dev": dev, "wired": wired, "nets": [], "active": None, "ip": "", "conns": conns}
         if not radio:
             return snap
         if device_state(dev) == "unavailable":     # on, but the card isn't answering
@@ -590,7 +660,25 @@ class Plugin(Base):
         snap["active"] = next((n for n in snap["nets"] if n["active"]), None)
         if snap["active"]:
             snap.update(self.details(dev, snap["active"]))
+            a = snap["active"]
+            snap["conns"] = conns + [{"name": a.get("conn_name") or a["ssid"], "type": "wifi", "label": "Wi-Fi",
+                                      "device": dev, "ssid": a["ssid"], "primary": not conns}]
         return snap
+
+    def conns_nmcli(self):
+        """The connections that aren't Wi-Fi, from nmcli (no live state;
+        worker thread): one command, then one per connected device."""
+        _, out = util.run("nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device")
+        keys = ["IP4.ADDRESS", "IP4.GATEWAY", "IP4.DNS", "IP6.ADDRESS", "GENERAL.HWADDR", "GENERAL.DRIVER",
+                "CAPABILITIES.SPEED"]
+
+        def show(d):
+            v = util.run(["nmcli", "-g", ",".join(keys), "device", "show", d])[1].splitlines() + [""] * len(keys)
+            many = lambda x: [unesc(y.strip()) for y in x.split(" | ") if y.strip()]
+            m = re.match(r"(\d+)", v[6].strip())
+            return {"ip4": many(v[0]), "gateway": unesc(v[1].strip()), "dns": many(v[2]), "ip6": many(v[3]),
+                    "mac": unesc(v[4].strip()), "driver": v[5].strip(), "speed": int(m.group(1)) if m else 0}
+        return links.parse_nmcli([fields(l) for l in out.splitlines()], show)
 
     def details(self, dev, a):
         """Addresses, internet state, link rates and since when, for the network
@@ -619,7 +707,7 @@ class Plugin(Base):
         if refresh and state is None:   # NetworkManager takes a few seconds to scan (the live state hears it)
             GLib.timeout_add_seconds(4, lambda: (self.refresh(), False)[1])
 
-    def net_row(self, n):
+    def net_row(self, n, link=None):
         name, color, _word, kind = security(n["security"])
         lv, word, lcolor, _ = quality(n["signal"])
         extra = "connected" if n["active"] else ago(n.get("ts")) if n["saved"] else ("asks for a user name" if kind == "enterprise" else "")
@@ -633,8 +721,13 @@ class Plugin(Base):
             chips.append(("Open", "yellow"))
         elif kind == "weak":
             chips.append((f"{name}: weak", "red"))
+        if n["active"]:     # like every connection you're on: its kind as a badge
+            chips.append(("Wi-Fi", "gray"))
+        data = {"kind": "net", **n}
+        if link is not None:
+            data["link"] = link
         return Row(n["ssid"], sub, icon=WIFI, color="green" if n["active"] else "yellow" if kind == "open" else "gray",
-                   chips=chips, level=lv, level_text=word, level_color=lcolor, data={"kind": "net", **n})
+                   chips=chips, level=lv, level_text=word, level_color=lcolor, data=data)
 
     def saved(self):
         """SSID -> {uuid, name, ts, metered} of saved Wi-Fi connections."""
@@ -654,10 +747,6 @@ class Plugin(Base):
                 res[ssid] = {"uuid": uuid, "name": f[0], "ts": f[3], "metered": metered}
         return res
 
-    def wired(self):
-        _, out = util.run("nmcli -t -f TYPE,STATE,CONNECTION device")
-        return next((fields(l)[2] for l in out.splitlines() if fields(l)[:2] == ["ethernet", "connected"]), "")
-
     # ------------------------------------------------------------ the status strip
     def build_strip(self):
         try:
@@ -676,14 +765,17 @@ class Plugin(Base):
             return self.connect_strip()
         if self.sharing:
             return self.share_strip()
+        conns = s.get("conns") or []
         if s.get("error"):
-            return ui.hero(ui.ring(0, "red", 64, 6, ui.label(WIFI_OFF, "glyph", "tarang-ring-glyph", "t-red")),
+            if conns:       # online another way: the rows say it, and why Wi-Fi isn't there
+                return None
+            return ui.hero(self.mark(WIFI_OFF, "red"),
                            self.grow(ui.vbox(ui.hbox(ui.label("Wi-Fi isn't available", "hero-title"),
                                                      ui.chip("Unavailable", "red", ALERT), spacing=8),
                                              ui.label(s["error"], "hero-sub", xalign=0, wrap=True), spacing=6)),
                            color="red")
         if s.get("stuck"):
-            return ui.hero(ui.ring(0, "yellow", 64, 6, ui.label(WIFI_OFF, "glyph", "tarang-ring-glyph", "t-yellow")),
+            return ui.hero(self.mark(WIFI_OFF, "yellow"),
                            self.grow(ui.vbox(ui.hbox(ui.label("Wi-Fi isn't answering", "hero-title"),
                                                      ui.chip("Stuck", "yellow", ALERT), spacing=8),
                                              ui.label("The card stopped responding (mostly after sleep). Reset turns "
@@ -692,34 +784,39 @@ class Plugin(Base):
                            ui.button("Reset Wi-Fi", self.reset_radio, "primary", WIFI, "Enter"),
                            color="yellow")
         if s.get("radio") is False:
-            sub = (f"You're on Ethernet ({s['wired']}). " if s.get("wired") else "") + \
-                  "Turn it on to see the networks around you."
-            return ui.hero(ui.ring(0, "gray", 64, 6, ui.label(WIFI_OFF, "glyph", "tarang-ring-glyph")),
+            sub = (f"You're online over {conns[0].get('label') or 'another connection'}. " if conns else "") + \
+                "Turn it on to see the networks around you."
+            return ui.hero(self.mark(WIFI_OFF, "gray"),
                            self.grow(ui.vbox(ui.hbox(ui.label("Wi-Fi is off", "hero-title"),
                                                      ui.chip("Off", "gray", WIFI_OFF), spacing=8),
-                                             ui.label(sub, "hero-sub", xalign=0, wrap=True), spacing=6)),
+                                             ui.label(sub, "hero-sub", xalign=0, wrap=True, max_width_chars=44),
+                                             spacing=6)),
                            ui.button("Turn on", lambda: self.set_radio(True), "primary", WIFI, "Space p p"),
                            color="gray")
         a = s.get("active")
         if not a:
-            if s.get("wired"):
-                return ui.hero(ui.ring(1, "green", 64, 6, ui.label(ETHERNET, "glyph", "tarang-ring-glyph", "t-green")),
-                               self.grow(ui.vbox(ui.hbox(ui.label(s["wired"], "hero-title"),
-                                                         ui.chip("On Ethernet", "green", CHECK), spacing=8),
-                                                 ui.label("Wi-Fi isn't connected: you don't need it while the cable "
-                                                          "is in. Pick a network below to join one anyway.",
-                                                          "hero-sub", xalign=0, wrap=True), spacing=6)),
-                               color="green")
-            return ui.hero(ui.ring(0, "gray", 64, 6, ui.label(WIFI, "glyph", "tarang-ring-glyph")),
+            if conns:
+                # online another way (a cable, a phone, a modem): its row comes
+                # first and the right side shows it live, like a Wi-Fi network
+                return None
+            return ui.hero(self.mark(WIFI, "gray"),
                            self.grow(ui.vbox(ui.hbox(ui.label("Not connected", "hero-title"),
                                                      ui.chip("Offline", "gray", LINK_OFF), spacing=8),
                                              ui.label("Pick a network below and press Enter to join it.",
                                                       "hero-sub", xalign=0, wrap=True), spacing=6)),
                            color="gray")
-        # Connected: no card here. The network is the list's first row and the
+        # Connected: no card here. Each connection is a row at the top and the
         # right side is its live view (speeds, graph, details, actions), so
         # nothing is said twice.
         return None
+
+    @staticmethod
+    def mark(icon, color="gray"):
+        """The strip's icon: the glyph alone in its colour, no ring (Spatial;
+        a ring is kept for progress: connecting, the hotspot starting)."""
+        g = ui.label(icon, "glyph", "tarang-mark", f"t-{color}")
+        g.set_valign(Gtk.Align.CENTER)
+        return g
 
     @staticmethod
     def tip(button, keys):
@@ -736,7 +833,7 @@ class Plugin(Base):
     def join_strip(self, n):
         sname, scolor, sword, _ = security(n["security"])
         pw_hint = "shown" if self.show_pw else "hidden"
-        return ui.hero(ui.ring(0, "yellow", 64, 6, ui.label(KEY, "glyph", "tarang-ring-glyph", "t-yellow")),
+        return ui.hero(self.mark(KEY, "yellow"),
                        self.grow(ui.vbox(ui.hbox(ui.label(f"Join {n['ssid']}", "hero-title"),
                                                  ui.chip(f"{sname} · {sword}", scolor, LOCK), spacing=8),
                                          ui.label(f"Type its password in the box above ({pw_hint}: Ctrl+S "
@@ -768,7 +865,7 @@ class Plugin(Base):
     def connect_strip(self):
         c = self.conn
         if c["state"] == "failed":
-            return ui.hero(ui.ring(0, "red", 64, 6, ui.label(ALERT, "glyph", "tarang-ring-glyph", "t-red")),
+            return ui.hero(self.mark(ALERT, "red"),
                            self.grow(ui.vbox(ui.hbox(ui.label(f"Couldn't join {c['ssid']}", "hero-title", "t-red"),
                                                      ui.chip("Failed", "red", ALERT), spacing=8),
                                              ui.label(c["why"], "hero-sub", xalign=0, wrap=True),
@@ -870,7 +967,7 @@ class Plugin(Base):
         if st is None:
             return None
         if st.get("failed"):
-            return ui.hero(ui.ring(0, "red", 64, 6, ui.label(HOTSPOT, "glyph", "tarang-ring-glyph", "t-red")),
+            return ui.hero(self.mark(HOTSPOT, "red"),
                            self.grow(ui.vbox(ui.hbox(ui.label("Hotspot unavailable", "hero-title"),
                                                      ui.chip("Unavailable", "red", ALERT), spacing=8),
                                              ui.label(st["failed"], "hero-sub", xalign=0, wrap=True), spacing=6)),
@@ -939,15 +1036,22 @@ class Plugin(Base):
             parts.append(ui.chip("No internet to share yet: plug in a cable or tether a phone", "yellow", ALERT))
         if error:
             parts.append(error)
-        return ui.hero(ui.ring(0, "gray", 64, 6, ui.label(HOTSPOT, "glyph", "tarang-ring-glyph")),
+        return ui.hero(self.mark(HOTSPOT, "gray"),
                        self.grow(ui.vbox(*parts, spacing=7)),
                        ui.button("Turn on", self.toggle_hotspot, "primary", HOTSPOT, "Space p h"), color="gray")
 
     # ------------------------------------------------------------ preview
     def build_preview(self, row):
         self.live_w = None
+        d = row.data or {}
+        if d.get("kind") == "link":
+            self.view_dev = links.graph_device(d) or None
+        elif d.get("kind") == "net" and d.get("active"):
+            self.view_dev = self.snap.get("dev")
+        else:
+            self.view_dev = None
         try:
-            w = self.preview_for(row.data or {})
+            w = self.preview_for(d)
         except Exception:   # a preview must never take the panel down
             import logging
             logging.getLogger("vyom.tarang").exception("preview")
@@ -958,6 +1062,8 @@ class Plugin(Base):
 
     def preview_for(self, d):
         kind = d.get("kind")
+        if kind == "link":
+            return self.link_dashboard(d)
         if kind == "net" and d.get("active"):
             return self.dashboard(d)
         if kind == "net":
@@ -1075,7 +1181,8 @@ class Plugin(Base):
         internet = INTERNET.get(s.get("internet") or "unknown", INTERNET["unknown"])
         ring = ui.label(WIFI, "glyph", "tarang-head-glyph", f"t-{lcolor}")
         ring.set_tooltip_text(note)
-        meta = ui.hbox(ui.chip(internet[0], internet[1], internet[2]), spacing=8)
+        link = a.get("link") or {}
+        meta = self.head_meta(link or {"type": "wifi", "label": "Wi-Fi", "primary": True}, internet)
         self.live_w = {}
         if since:
             dur = ui.label(live.duration_text(time.time() - since), "tarang-since")
@@ -1106,7 +1213,7 @@ class Plugin(Base):
                             ("Band", f"{band(a['freq'])} · channel {a['chan']}"), ("Link rate", linktext),
                             ("IP address", s.get("ip") or "—"), ("Router", s.get("gateway") or "—"),
                             ("DNS", s.get("dns") or "—"), ("IPv6", s.get("ip6") or "none"),
-                            ("Access point", a.get("bssid") or "—")])
+                            ("Access point", a.get("bssid") or "—")] + self.route_fact(link))
         btns = [("Share", self.share, "", QR, "Space c q"), ("Disconnect", self.disconnect, "danger", LINK_OFF, "Space c d")]
         parts = [head, ui.buttons(btns), block]
         if s.get("internet") in ("limited", "none"):
@@ -1120,6 +1227,104 @@ class Plugin(Base):
             parts.append(ui.notice("Metered", "This network counts against a data plan: big downloads cost.", "yellow"))
         parts.append(facts)
         return ui.vbox(*parts, spacing=14, cls="tarang-dash")
+
+    def head_meta(self, c, internet):
+        """Under a connection's name: its kind as a badge, then whether the
+        internet is there (on the connection carrying your traffic) or that
+        it's on standby (another one is used first)."""
+        kind = c.get("type") or "wifi"
+        meta = ui.hbox(ui.chip(c.get("label") or links.label(kind), "gray", links.glyph(kind)), spacing=8)
+        conns = self.snap.get("conns") or []
+        carries = c.get("primary") or any(v.get("primary") and v.get("via") == c.get("name") for v in conns)
+        if carries or len(conns) < 2:
+            meta.append(ui.chip(internet[0], internet[1], internet[2]))
+        else:
+            meta.append(ui.chip("Standby", "gray"))
+        return meta
+
+    def route_fact(self, c):
+        """("Route", ...) when there's more than one connection."""
+        conns = self.snap.get("conns") or []
+        if not c or len(conns) < 2:
+            return []
+        for f in links.facts(c, self.primary_name()):
+            if f[0] == "Route":
+                return [f]
+        return []
+
+    def primary_name(self):
+        return next((c.get("name", "") for c in self.snap.get("conns") or [] if c.get("primary")), "")
+
+    def link_dashboard(self, c):
+        """Any connection that isn't Wi-Fi, the way the Wi-Fi network's is
+        shown: its kind's glyph and name, live speeds over the last minute,
+        the details in one list, and what you can do."""
+        s = self.snap
+        kind = c.get("type") or "other"
+        internet = INTERNET.get(s.get("internet") or "unknown", INTERNET["unknown"])
+        icon = ui.label(links.glyph(kind), "glyph", "tarang-head-glyph", "t-green")
+        icon.set_tooltip_text("Connected")
+        meta = self.head_meta(c, internet)
+        dev = links.graph_device(c)
+        key = (dev, c.get("uuid") or c.get("name"))
+        since = self.link_since.get(key)
+        dur = ui.label(live.duration_text(time.time() - since) if since else "", "tarang-since")
+        line = ui.hbox(ui.label("Connected for", "tarang-since-at"), dur, spacing=4)
+        line.set_valign(Gtk.Align.CENTER)
+        line.set_visible(bool(since))
+        meta.append(line)
+        head = self.head(c.get("name") or dev or "Connection", icon, meta)
+        block = self.live_block()
+        self.live_w.update({"since": dur, "since_ts": since})
+        if since is None and dev and kind not in ("vpn", "wireguard") and key not in self.link_since:
+            self.link_since[key] = None     # asked once: NetworkManager's log, after the first frame
+
+            def got(ts):
+                self.link_since[key] = ts if isinstance(ts, float) else None
+                w = self.live_w or {}
+                if ts and w.get("since") is dur:
+                    w["since_ts"] = ts
+                    dur.set_label(live.duration_text(time.time() - ts))
+                    line.set_visible(True)
+            self.background(lambda: live.connected_since(dev), got)
+        got_l = ui.label("", "tarang-total", "tarang-rx")
+        sent_l = ui.label("", "tarang-total", "tarang-tx")
+        totals = ui.hbox(got_l, ui.label("received", "tarang-since-at"), ui.label("·", "tarang-since-at"),
+                         sent_l, ui.label("sent", "tarang-since-at"), spacing=5)
+        totals.set_tooltip_text(f"Since {dev} came up" if dev else "")
+        block.append(totals)
+        self.live_w.update({"total_rx": got_l, "total_tx": sent_l})
+        btns = [("Disconnect", lambda: self.disconnect_link(c), "danger", LINK_OFF, "Space c d")]
+        parts = [head, ui.buttons(btns), block]
+        if c.get("primary") and s.get("internet") in ("limited", "none"):
+            parts.append(ui.notice("Connected, but no internet", "The other end answers, but nothing gets past "
+                                   "it: check the router, the phone or the line.",
+                                   "yellow" if s.get("internet") == "limited" else "red"))
+        if c.get("primary") and s.get("internet") == "portal":
+            parts.append(ui.notice("Sign in to use the internet", "This network shows a sign-in page first: open "
+                                   "any website in a browser to get it.", "peach", LOGIN))
+        if c.get("metered") in ("yes", "yes (guessed)") or kind == "mobile":
+            parts.append(ui.notice("Metered", "This connection may count against a data plan: big downloads "
+                                   "cost.", "yellow"))
+        parts.append(self.facts(links.facts(c, self.primary_name())))
+        return ui.vbox(*parts, spacing=14, cls="tarang-dash")
+
+    def disconnect_link(self, c):
+        """Takes a connection down (NetworkManager's `connection down`: it
+        comes back when you bring it up, or plug the cable in again)."""
+        name = c.get("name") or c.get("device") or "it"
+        argv = ["nmcli", "connection", "down", "uuid", c["uuid"]] if c.get("uuid") else \
+            ["nmcli", "device", "disconnect", c.get("device", "")] if c.get("device") else None
+        if argv is None:
+            self.set_status(f"can't tell NetworkManager which connection {name} is", "bad")
+            return
+        self.set_status(f"disconnecting {name}…")
+
+        def done(r):
+            code = r[0] if isinstance(r, tuple) else 1
+            self.set_status("" if code == 0 else f"couldn't disconnect {name}", "" if code == 0 else "bad")
+            self.refresh()
+        self.background(lambda: util.run(argv, timeout=15), done)
 
     def hotspot_live(self):
         """The hotspot's own traffic: what the devices on it send and get."""
@@ -1145,9 +1350,11 @@ class Plugin(Base):
         parts = [ui.hbox(bigtile(WIFI_OFF, "gray"),
                          ui.vbox(ui.title("Wi-Fi is off"), ui.meta("The card is off: no scanning, no networks."),
                                  spacing=2), spacing=12)]
-        if s.get("wired"):
-            parts.append(ui.notice(f"You're online over Ethernet ({s['wired']})",
-                                   "Wi-Fi isn't needed while the cable is in.", "green", ETHERNET))
+        conns = s.get("conns") or []
+        if conns:
+            c = conns[0]
+            parts.append(ui.notice(f"You're online over {c.get('label') or 'another connection'} ({c.get('name')})",
+                                   "Wi-Fi isn't needed while it's there.", "green", links.glyph(c.get("type"))))
         else:
             parts.append(ui.notice("You're offline", "Nothing else connects this laptop right now.", "gray", LINK_OFF))
         parts.append(ui.buttons([("Turn Wi-Fi on", lambda: self.set_radio(True), "primary", WIFI, "Enter")]))
@@ -1568,6 +1775,15 @@ class Plugin(Base):
         self.v_rescan(n, a)
 
     def v_disconnect(self, _n, _a):
+        d = self.selected()
+        if d.get("kind") == "link":     # the selected connection (a cable, a phone, a VPN)
+            self.disconnect_link(d)
+            return
+        if not self.snap.get("active"):
+            conns = [c for c in self.snap.get("conns") or [] if c.get("type") != "wifi"]
+            if conns:
+                self.set_status("pick a connection first (j / k), then Space c d", "bad")
+                return
         self.disconnect()
 
     def v_forget(self, _n, _a):
@@ -1584,6 +1800,12 @@ class Plugin(Base):
             self.done_copy(text, what)
             return
         d = self.selected()
+        if d.get("kind") == "link":
+            if what == "ssid":
+                self.done_copy(d.get("name", ""), what)
+            else:
+                self.set_status(f"{d.get('name', 'it')} ({d.get('label', 'not Wi-Fi')}) has no password to copy", "bad")
+            return
         n = d if d.get("kind") == "net" else self.snap.get("active") or {}
         if not n:
             self.set_status("no network selected", "bad")
