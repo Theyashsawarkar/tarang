@@ -4,6 +4,7 @@ Newest first. Releases are tags (`vX.Y.Z`).
 
 ## Unreleased
 
+- Website: pranali joins the family list in the footer; the site builder passes ruff.
 - CI installs PyGObject with GTK 4, cairo and gtk4-layer-shell from apt (and runs the system Python) so the tests that import GTK run there too; they failed on GitHub with `No module named 'gi'` since they were added.
 
 ## v0.7.0 -- 2026-11-27
